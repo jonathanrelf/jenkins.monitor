@@ -1,0 +1,7 @@
+name: Test3D
+description: A sample web application
+dependencies:
+  browser: any
+  json: any
+  json_object: any
+  vector_math: any
