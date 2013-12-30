@@ -1,7 +1,6 @@
 import 'dart:html';
 import 'dart:math' as Math;
 import 'package:three/three.dart';
-import 'package:json_object/json_object.dart'; 
 import 'jenkins.dart';
 
 int renderObjectCount;
@@ -55,7 +54,6 @@ void init() {
   info.style.top = '10px';
   info.style.width = '100%';
   info.style.textAlign = 'center';
-  info.innerHtml = 'Drag to spin the cube';
   //container.appendChild( info );
   container.nodes.add( info );
 
@@ -79,8 +77,10 @@ void init() {
     document.onTouchStart.listen(onDocumentTouchStart),
     document.onTouchMove.listen(onDocumentTouchMove)
     ];
-  var url = "http://build.esendex.com/api/json?pretty=true&depth=2&tree=jobs[name,lastBuild[number,duration,timestamp,result,changeSet[items[msg,author[fullName]]]]]";
+  //var url = "http://build.esendex.com/api/json?pretty=true&depth=2&tree=jobs[name,lastBuild[number,duration,timestamp,result,changeSet[items[msg,author[fullName]]]]]";
   //http://build.esendex.com/api/json?pretty=true&depth=3&tree=jobs[name,color,downstreamProjects[name],upstreamProjects[name],lastBuild[number,builtOn,duration,timestamp,result,actions[lastBuiltRevision[branch[name]]],changeSet[items[msg,author[fullName],date]]]]
+  var url = "http://build.esendex.com/api/json?pretty=true&depth=2&tree=jobs[name,color,downstreamProjects[name],upstreamProjects[name],lastBuild[number,builtOn,duration,timestamp,result,actions[causes[shortDescription,upstreamProject,upstreamBuild],lastBuiltRevision[branch[name]]],changeSet[items[msg,author[fullName],date]]]]";
+  
   var request = HttpRequest.request(url).then(onDataLoaded);
 }
 
@@ -192,7 +192,6 @@ void onDataLoaded(HttpRequest req) {
   renderObjectCount = 0;
   var cubesPerSide = Math.sqrt(jobsData.jobs.length).ceil();
   print(cubesPerSide);
-  jobsData.jobs.sort((x,y) => x.compareTo(y));
   handleJobs(jobsData.jobs, cubesPerSide);
   categoriesMap = new Map<String, List<Job>>();
   
@@ -235,7 +234,7 @@ void handleJobs(List<Job> currentJobs, int cubesPerSide)
             }
           }
         }
-        addCube(cubeSize, xOffset + x*cubeSize, yOffset + y*cubeSize, colour);
+        //addCube(cubeSize, xOffset + x*cubeSize, yOffset + y*cubeSize, colour);
       }
     }
   }
@@ -243,20 +242,83 @@ void handleJobs(List<Job> currentJobs, int cubesPerSide)
 }
 
 void handleCategories(Map<String,List<Job>> categories) {
-  var categoryCount = categories.length;
-  for (var category in categories) {
+  var categoryKeys = categories.keys;
+  var categoriesInfo = new DivElement();
+  
+  for(var categoryKey in categoryKeys) {
+    var categoryInfo = new DivElement();
+    categoryInfo.className = "categoryInfo";
+    var categoryName = new HeadingElement.h2();
+       
+    var jobs = categories[categoryKey];
+    var jobList = new UListElement();
     
-  }
-    for (var y=0; y < categories[x].length; y++) {
-      List<Job> jobList = categories[x];
-      print(jobList[y].name);
-      Job currentJob = jobList[y];
-      if (currentJob.lastBuild.result == "FAILURE") { print('oops!'); }      
+    var categoryCount = 0;
+    for(var job in jobs) {
+      if (job.color.contains("_anime")) { 
+        var buildingJobInfo = new LIElement();
+        buildingJobInfo.text = job.name;
+        buildingJobInfo.className = "building";
+        var branchName = "";
+        var buildJobDetails = new UListElement();
+        var buildJobBranch = new LIElement();
+        var nowAsEpochMilliseconds = new DateTime.now().millisecondsSinceEpoch;
+        var duration = new Duration(milliseconds: (nowAsEpochMilliseconds - job.lastBuild.timestamp)).inMinutes;
+        var actions = job.lastBuild.actions;
+        if (actions.any((v) => v.containsKey("lastBuiltRevision"))){
+          var revision = actions.firstWhere((v) => v.containsKey("lastBuiltRevision"));
+          branchName = revision.lastBuiltRevision.branch[0].name;
+        }
+        var durationElement = new SpanElement();
+        durationElement.className = "duration";
+        durationElement.text = duration.toString();
+        buildJobBranch.text =  "#" + job.lastBuild.number.toString() + " " + branchName;
+        buildJobBranch.append(durationElement);
+        buildJobDetails.append(buildJobBranch);
+        if(buildJobDetails.children.length > 0) {buildingJobInfo.append(buildJobDetails);}
+        jobList.append(buildingJobInfo);
+      }
+      if (job.lastBuild.result == "FAILURE") {
+        querySelector("body").className="failed";
+        var failedJobInfo = new LIElement();
+        failedJobInfo.className = "failed";
+        failedJobInfo.text = job.name;
+        var branchName = "";
+        var buildJobDetails = new UListElement();
+        var buildJobBranch = new LIElement();
+        var actions = job.lastBuild.actions;
+        print(actions);
+        if (actions.any((v) => v.containsKey("lastBuiltRevision"))){
+          var revision = actions.firstWhere((v) => v.containsKey("lastBuiltRevision"));
+          branchName = revision.lastBuiltRevision.branch[0].name;
+        }
+        
+        var branchNameElement = new SpanElement();
+        branchNameElement.className = "branch";
+        branchNameElement.text = branchName;
+        var nowAsEpochMilliseconds = new DateTime.now().millisecondsSinceEpoch;
+        var duration = new Duration(milliseconds: (nowAsEpochMilliseconds - job.lastBuild.timestamp)).inMinutes;
+        var durationElement = new SpanElement();
+        durationElement.className = "duration";
+        durationElement.text = duration.toString();
+        buildJobBranch.text =  "#" + job.lastBuild.number.toString();
+        buildJobBranch.append(branchNameElement);
+        buildJobBranch.append(durationElement);
+        buildJobDetails.append(buildJobBranch);
+        if(buildJobDetails.children.length > 0) {failedJobInfo.append(buildJobDetails);}
+        jobList.append(failedJobInfo);
+        categoryInfo.className = "categoryWithFailure";
+      }
+      categoryCount++;
     }
+    categoryName.text = categoryKey + " (" + categoryCount.toString() + ")";
+    
+    categoryInfo.append(categoryName);
+    if(jobList.children.length > 0){ categoryInfo.append(jobList);}
+    categoriesInfo.append(categoryInfo);
   }
+  querySelector("#wrapper").append(categoriesInfo);
 }
-
-void handleCategory()
 
 void handleJob(Job currentJob)
 {

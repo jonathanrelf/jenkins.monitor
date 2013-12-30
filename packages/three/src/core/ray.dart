@@ -13,33 +13,43 @@ class Ray {
   num near,
       far;
 
+  Vector3 _v0, _v1, _v2;
+
   final num precision;
 
   Ray( [this.origin, this.direction, this.near = 0, this.far = double.INFINITY] )
-      : precision = 0.0001 {
+      : _v0 = new Vector3(),
+        _v1 = new Vector3(),
+        _v2 = new Vector3(),
+        precision = 0.0001 {
 
-    if (this.origin == null) this.origin = new Vector3.zero();
-    if (this.direction == null) this.direction = new Vector3.zero();
+    if (this.origin == null) this.origin = new Vector3();
+    if (this.direction == null) this.direction = new Vector3();
 
       }
 
-  double _distanceFromIntersection( Vector3 origin, Vector3 direction, Vector3 position ) {
-    Vector3 v0 = position - origin;
-    double dot = v0.dot(direction);
+  num _distanceFromIntersection( Vector3 origin, Vector3 direction, Vector3 position ) {
+    var v0 = _v0, v1 = _v1, v2 = _v2;
 
-    Vector3 intersect = origin + direction.scaled(dot);
-    double distance = position.absoluteError(intersect);
+    var dot, intersect, distance;
+    v0.sub( position, origin );
+    dot = v0.dot( direction );
+
+    intersect = v1.add( origin, v2.copy( direction ).multiplyScalar( dot ) );
+    distance = position.distanceTo( intersect );
 
     return distance;
   }
 
   //http://www.blackpawn.com/texts/pointinpoly/default.html
   bool _pointInFace3( Vector3 p, Vector3 a, Vector3 b, Vector3 c ) {
+    var v0 = _v0, v1 = _v1, v2 = _v2;
+
     num dot00, dot01, dot02, dot11, dot12, invDenom, u, v;
 
-    Vector3 v0 = c - a;
-    Vector3 v1 = b - a;
-    Vector3 v2 = p - a;
+    v0.sub( c, a );
+    v1.sub( b, a );
+    v2.sub( p, a );
 
     dot00 = v0.dot( v0 );
     dot01 = v0.dot( v1 );
@@ -55,14 +65,17 @@ class Ray {
   }
 
   List<Intersect> intersectObject( Object3D object, {bool recursive: false} ) {
-    List<Vector3> abcd = new List.generate(4, (_) => new Vector3.zero());
+    Vector3 a = new Vector3();
+    Vector3 b = new Vector3();
+    Vector3 c = new Vector3();
+    Vector3 d = new Vector3();
 
-    Vector3 originCopy = new Vector3.zero();
-    Vector3 directionCopy = new Vector3.zero();
+    Vector3 originCopy = new Vector3();
+    Vector3 directionCopy = new Vector3();
 
-    Vector3 vector = new Vector3.zero();
-    Vector3 normal = new Vector3.zero();
-    Vector3 intersectPoint = new Vector3.zero();
+    Vector3 vector = new Vector3();
+    Vector3 normal = new Vector3();
+    Vector3 intersectPoint = new Vector3();
 
     Intersect intersect;
     List intersects = [];
@@ -75,7 +88,7 @@ class Ray {
     }
 
     if ( object is Particle ) {
-      num distance = _distanceFromIntersection( origin, direction, object.matrixWorld.getTranslation() );
+      num distance = _distanceFromIntersection( origin, direction, object.matrixWorld.getPosition() );
 
       if ( distance > object.scale.x ) {
         return [];
@@ -93,8 +106,8 @@ class Ray {
     } else if ( object is Mesh ) {
       Mesh mesh = object;
       // Checking boundingSphere
-      num distance = _distanceFromIntersection( origin, direction, object.matrixWorld.getTranslation() );
-      Vector3 scale = Frustum.__v1.setValues( object.matrixWorld.getColumn(0).length, object.matrixWorld.getColumn(1).length, object.matrixWorld.getColumn(2).length );
+      num distance = _distanceFromIntersection( origin, direction, object.matrixWorld.getPosition() );
+      Vector3 scale = Frustum.__v1.setValues( object.matrixWorld.getColumnX().length(), object.matrixWorld.getColumnY().length(), object.matrixWorld.getColumnZ().length() );
 
       if ( distance > mesh.geometry.boundingSphere.radius * Math.max( scale.x, Math.max( scale.y, scale.z ) ) ) {
         return intersects;
@@ -104,7 +117,7 @@ class Ray {
 
       int f;
 
-      Face face;
+      IFace3 face;
       num dot, scalar;
       Geometry geometry = mesh.geometry;
       List vertices = geometry.vertices;
@@ -116,7 +129,7 @@ class Ray {
       int side = object.material.side;
 
 
-      extractRotation(object.matrixRotationWorld, object.matrixWorld);
+      object.matrixRotationWorld.extractRotation( object.matrixWorld );
 
       int fl = geometry.faces.length;
 
@@ -129,19 +142,17 @@ class Ray {
 
         side = material.side;
 
-        originCopy.setFrom( origin );
-        directionCopy.setFrom( direction );
+        originCopy.copy( origin );
+        directionCopy.copy( direction );
 
         objMatrix = object.matrixWorld;
 
         // determine if ray intersects the plane of the face
         // note: this works regardless of the direction of the face normal
 
-        vector.setFrom(face.centroid);
-        vector.applyProjection(objMatrix).sub(originCopy);
-        normal.setFrom(face.normal);
-        normal.applyProjection(object.matrixRotationWorld);
-        dot = directionCopy.dot(normal);
+        vector = objMatrix.multiplyVector3( vector.copy( face.centroid ) ).subSelf( originCopy );
+        normal = object.matrixRotationWorld.multiplyVector3( normal.copy( face.normal ) );
+        dot = directionCopy.dot( normal );
 
         // bail if ray and plane are parallel
         if ( dot.abs() < 0.0001 ) continue;
@@ -156,34 +167,44 @@ class Ray {
 
         if ( side == DoubleSide || ( side == FrontSide ? dot < 0 : dot > 0 ) ) {
 
-          intersectPoint = originCopy + directionCopy.scale(scalar);
+          intersectPoint.add( originCopy, directionCopy.multiplyScalar( scalar ) );
 
-          abcd = face.indices.map((idx) => vertices[idx].clone().applyProjection(objMatrix)).toList();
+          if ( face is Face3 ) {
 
-          var pointInFace;
+            a = objMatrix.multiplyVector3( a.copy( vertices[ face.a ] ) );
+            b = objMatrix.multiplyVector3( b.copy( vertices[ face.b ] ) );
+            c = objMatrix.multiplyVector3( c.copy( vertices[ face.c ] ) );
 
-          // TODO - Make this work a face of arbitrary size
-          if ( face.size == 3) {
-
-            pointInFace =  _pointInFace3( intersectPoint, abcd[0], abcd[1], abcd[2] );
-
-          } else if ( face.size == 4 ) {
-
-            pointInFace =
-                _pointInFace3( intersectPoint, abcd[0], abcd[1], abcd[3]) ||
-                _pointInFace3( intersectPoint, abcd[1], abcd[2], abcd[3] );
-
-          }
-
-          if ( pointInFace  ) {
-            intersect = new Intersect(
-                distance: originCopy.absoluteError( intersectPoint ),
+            if ( _pointInFace3( intersectPoint, a, b, c ) ) {
+              intersect = new Intersect(
+                distance: originCopy.distanceTo( intersectPoint ),
                 point: intersectPoint.clone(),
                 face: face,
                 object: object
-            );
+              );
 
-            intersects.add( intersect );
+              intersects.add( intersect );
+
+            }
+
+          } else if ( face is Face4 ) {
+            Face4 face4 = face;
+            a = objMatrix.multiplyVector3( a.copy( vertices[ face4.a ] ) );
+            b = objMatrix.multiplyVector3( b.copy( vertices[ face4.b ] ) );
+            c = objMatrix.multiplyVector3( c.copy( vertices[ face4.c ] ) );
+            d = objMatrix.multiplyVector3( d.copy( vertices[ face4.d ] ) );
+
+            if ( _pointInFace3( intersectPoint, a, b, d ) || _pointInFace3( intersectPoint, b, c, d ) )
+            {
+              intersect = new Intersect(
+                  distance: originCopy.distanceTo( intersectPoint ),
+                  point: intersectPoint.clone(),
+                  face: face,
+                  object: object
+              );
+
+              intersects.add( intersect );
+            }
           }
         }
       }
@@ -208,7 +229,7 @@ class Ray {
 class Intersect {
   num distance;
   Vector3 point;
-  Face face;
+  IFace3 face;
   Object3D object;
 
   Intersect({this.distance, this.point, this.face, this.object});

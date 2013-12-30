@@ -30,7 +30,7 @@ class Object3D {
 
   bool matrixAutoUpdate = false, matrixWorldNeedsUpdate = false;
 
-  var quaternion;
+  Quaternion quaternion;
   bool useQuaternion;
 
   num boundRadius, boundRadiusScale;
@@ -50,25 +50,25 @@ class Object3D {
         parent = null,
         children = [],
 
-        up = new Vector3( 0.0, 1.0, 0.0),
+        up = new Vector3( 0, 1, 0),
 
-        position = new Vector3(0.0, 0.0, 0.0),
-        rotation = new Vector3(0.0, 0.0, 0.0),
+        position = new Vector3(),
+        rotation = new Vector3(),
         eulerOrder = 'XYZ',
-        scale = new Vector3( 1.0, 1.0, 1.0 ),
+        scale = new Vector3( 1, 1, 1 ),
 
         renderDepth = null,
 
         rotationAutoUpdate = true,
 
-        matrix = new Matrix4.identity(),
-        matrixWorld = new Matrix4.identity(),
-        matrixRotationWorld = new Matrix4.identity(),
+        matrix = new Matrix4(),
+        matrixWorld = new Matrix4(),
+        matrixRotationWorld = new Matrix4(),
 
         matrixAutoUpdate = true,
         matrixWorldNeedsUpdate = true,
 
-        quaternion = new Quaternion.identity(),
+        quaternion = new Quaternion(),
         useQuaternion = false,
 
         boundRadius = 0.0,
@@ -81,7 +81,7 @@ class Object3D {
 
         frustumCulled = true,
 
-        _vector = new Vector3.zero();
+        _vector = new Vector3();
 
         // TODO - These are not in three.js
         //_dynamic = false, // when true it retains arrays so they can be updated with __dirty*
@@ -93,39 +93,37 @@ class Object3D {
   bool get isDynamic => _dynamic;
        set isDynamic(bool flag) => _dynamic = flag;
 
-  void applyMatrix ( Matrix4 matrix ) {
-    this.matrix = matrix * this.matrix;
+  void applyMatrix ( matrix ) {
 
-    this.scale = getScaleFromMatrix( this.matrix );
+    this.matrix.multiply(matrix, this.matrix);
 
-    Matrix4 mat = extractRotation(new Matrix4.identity(), this.matrix );
-    this.rotation = calcEulerFromRotationMatrix( mat, this.eulerOrder );
+    this.scale.getScaleFromMatrix( this.matrix );
 
-    this.position = this.matrix.getTranslation();
+    var mat = new Matrix4().extractRotation( this.matrix );
+    this.rotation.setEulerFromRotationMatrix( mat, this.eulerOrder );
+
+    this.position.getPositionFromMatrix( this.matrix );
+
   }
 
   void translate( num distance, Vector3 axis ) {
-    matrix.rotate3( axis );
-    axis.normalize();
-    position.add( axis.scale( distance ) );
+    matrix.rotateAxis( axis );
+    position.addSelf( axis.multiplyScalar( distance ) );
   }
 
-  void translateX( num distance ) => translate( distance, _vector.setValues( 1.0, 0.0, 0.0 ) );
+  void translateX( num distance ) => translate( distance, _vector.setValues( 1, 0, 0 ) );
 
-  void translateY( num distance ) => translate( distance, _vector.setValues( 0.0, 1.0, 0.0 ) );
+  void translateY( num distance ) => translate( distance, _vector.setValues( 0, 1, 0 ) );
 
-  void translateZ( num distance ) => translate( distance, _vector.setValues( 0.0, 0.0, 1.0 ) );
+  void translateZ( num distance ) => translate( distance, _vector.setValues( 0, 0, 1 ) );
 
   void lookAt( Vector3 vector ) {
     // TODO: Add hierarchy support.
 
-    makeLookAt( matrix, vector, position, up );
+    matrix.lookAt( vector, position, up );
 
     if ( rotationAutoUpdate ) {
-      if(useQuaternion)
-        quaternion.setFromRotationMatrix(matrix);
-      else
-        rotation = calcEulerFromRotationMatrix( matrix, eulerOrder );
+      rotation.setEulerFromRotationMatrix( matrix, eulerOrder );
     }
   }
 
@@ -202,16 +200,15 @@ class Object3D {
   }
 
   void updateMatrix() {
+    matrix.setPosition( position );
 
     if ( useQuaternion ) {
-      setRotationFromQuaternion( matrix, quaternion );
+      matrix.setRotationFromQuaternion( quaternion );
     } else {
-      setRotationFromEuler( matrix, rotation, eulerOrder );
+      matrix.setRotationFromEuler( rotation, eulerOrder );
     }
 
-    matrix.setTranslation( position );
-
-    if ( scale.x != 1.0 || scale.y != 1.0 || scale.z != 1.0 ) {
+    if ( scale.x != 1 || scale.y != 1 || scale.z != 1 ) {
       matrix.scale( scale );
       boundRadiusScale = Math.max( scale.x, Math.max( scale.y, scale.z ) );
     }
@@ -226,9 +223,9 @@ class Object3D {
     // update matrixWorld
     if ( matrixWorldNeedsUpdate || force ) {
       if ( parent != null ) {
-        matrixWorld = parent.matrixWorld * matrix;
+        matrixWorld.multiply( parent.matrixWorld, matrix );
       } else {
-        matrixWorld = matrix.clone();
+        matrixWorld.copy( matrix );
       }
 
       matrixWorldNeedsUpdate = false;
@@ -241,13 +238,9 @@ class Object3D {
 
   }
 
-  worldToLocal(Vector3 vector) {
-    Matrix4 m = this.matrixWorld.clone();
-    m.invert();
-    m.transform3( vector );
-  }
+  worldToLocal( vector ) => __m1.getInverse( this.matrixWorld ).multiplyVector3( vector );
 
-  localToWorld(Vector3 vector) => vector.applyProjection(matrixWorld);
+  localToWorld( vector ) => matrixWorld.multiplyVector3( vector );
 
   clone() {
 
@@ -258,7 +251,7 @@ class Object3D {
   static Matrix4 ___m1;
   static Matrix4 get __m1 {
     if (___m1 == null) {
-      ___m1 = new Matrix4.identity();
+      ___m1 = new Matrix4();
     }
     return ___m1;
   }

@@ -8,6 +8,7 @@ abstract class IJobs {
 
 abstract class IJob {
   String name;
+  String color;
   LastBuild jobList;
 }
 
@@ -30,27 +31,18 @@ class Jobs extends JsonObject implements IJobs {
   }
 }
 
-class Job extends JsonObject implements IJob, Comparable {
+class Job extends JsonObject implements IJob {
   Job(String jsonString) {
     var jobDetails = new JsonObject.fromJsonString(jsonString);
     name = jobDetails.name;
+    color = jobDetails.color;
     lastBuild = new LastBuild();
     var buildInfo = jobDetails.lastBuild;
     if (buildInfo != null) { 
       lastBuild = new LastBuild.fromJsonString(buildInfo.toString());
     }
   }
-  
-  int compareTo(Job otherJob) {
-    var thing = otherJob.lastBuild.result;
-    if (otherJob.lastBuild.result == "FAILURE" && this.lastBuild != "FAILURE") {
-      return 1;
-    }
-    if (this.lastBuild == "FAILURE" && otherJob.lastBuild.result != "FAILURE") {
-      return -1; 
-    }
-    return 0;
-  }
+ 
 }
 
 class LastBuild extends JsonObject implements ILastBuild {

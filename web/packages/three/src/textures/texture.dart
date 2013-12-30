@@ -24,7 +24,7 @@ class ImageList {
 }
 
 class Texture {
-  int id;
+  int _id;
   var image;
   var mapping; //UVMapping appears to be missing..
   int wrapS, wrapT, magFilter, minFilter, format, type, anisotropy;
@@ -37,10 +37,6 @@ class Texture {
 
   bool flipY;
 
-  int unpackAlignment = 4; // valid values: 1, 2, 4, 8 (see http://www.khronos.org/opengles/sdk/docs/man/xhtml/glPixelStorei.xml)
-
-  List mipmaps = [];
-
   //TODO: resolve dynamic vars, find out what UVMapping is!
   Texture( [  this.image,
               this.mapping = null,
@@ -52,12 +48,12 @@ class Texture {
               this.type = UnsignedByteType,
               this.anisotropy = 1] )
   {
-    id = TextureCount ++;
+    _id = TextureCount ++;
 
     this.mapping = mapping != null ? mapping : new UVMapping();
 
-    offset = new Vector2.zero();
-    repeat = new Vector2( 1.0, 1.0 );
+    offset = new Vector2( 0, 0 );
+    repeat = new Vector2( 1, 1 );
 
     generateMipmaps = true;
     premultiplyAlpha = false;
@@ -70,9 +66,8 @@ class Texture {
   Texture clone() {
     Texture clonedTexture = new Texture( image, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy );
 
-    clonedTexture.mipmaps = new List.from( mipmaps );
-    clonedTexture.offset.setFrom( offset );
-    clonedTexture.repeat.setFrom( repeat );
+    clonedTexture.offset.copy( offset );
+    clonedTexture.repeat.copy( repeat );
 
     return clonedTexture;
   }

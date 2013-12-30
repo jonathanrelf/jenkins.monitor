@@ -13,6 +13,10 @@ packages:
     description: json_object
     source: hosted
     version: "1.0.18+2"
+  three:
+    description: three
+    source: hosted
+    version: "0.2.5+1"
   vector_math:
     description: vector_math
     source: hosted

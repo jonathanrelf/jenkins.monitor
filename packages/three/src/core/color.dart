@@ -9,27 +9,18 @@ part of three;
 
 class Color {
 
-  double _r;
-  double _g;
-  double _b;
+  num r;
+  num g;
+  num b;
 
-  set r(num r) { _r = r.toDouble();}
-  get r => _r;
-
-  set g(num g) { _g = g.toDouble();}
-  get g => _g;
-
-  set b(num b) { _b = b.toDouble();}
-  get b => _b;
-
-  int get _rr => (r*255).floor();
-  int get _gg => (g*255).floor();
-  int get _bb => (b*255).floor();
+  int get _rr => (r*255).floor().toInt();
+  int get _gg => (g*255).floor().toInt();
+  int get _bb => (b*255).floor().toInt();
 
   Color( [num hex] )
-      : _r = 1.0,
-        _g = 1.0,
-        _b = 1.0 {
+      : r = 1.0,
+        g = 1.0,
+        b = 1.0 {
 
     if ( hex is num ) setHex( hex );
   }
@@ -78,9 +69,9 @@ class Color {
   }
 
   Color setRGB( num newR, num newG, num newB ) {
-    r = newR.toDouble();
-    g = newG.toDouble();
-    b = newB.toDouble();
+    r = newR;
+    g = newG;
+    b = newB;
 
     return this;
   }
@@ -91,7 +82,7 @@ class Color {
     num i, f, p, q, t;
 
     if ( v == 0 ) {
-      r = g = b = 0.0;
+      r = g = b = 0;
     } else {
       i = ( h * 6 ).floor();
       f = ( h * 6 ) - i;
@@ -111,90 +102,6 @@ class Color {
     }
 
     return this;
-  }
-
-  Color setHSL( h, s, l ) {
-
-    // h,s,l ranges are in 0.0 - 1.0
-
-    if ( s == 0 ) {
-
-      r = g = b = l;
-
-    } else {
-
-      var hue2rgb = ( p, q, t ) {
-
-        if ( t < 0 ) t += 1;
-        if ( t > 1 ) t -= 1;
-        if ( t < 1 / 6 ) return p + ( q - p ) * 6 * t;
-        if ( t < 1 / 2 ) return q;
-        if ( t < 2 / 3 ) return p + ( q - p ) * 6 * ( 2 / 3 - t );
-        return p;
-
-      };
-
-      var p = l <= 0.5 ? l * ( 1 + s ) : l + s - ( l * s );
-      var q = ( 2 * l ) - p;
-
-      this.r = hue2rgb( q, p, h + 1 / 3 );
-      this.g = hue2rgb( q, p, h );
-      this.b = hue2rgb( q, p, h - 1 / 3 );
-
-    }
-
-    return this;
-
-  }
-
-  get HSL {
-    // h,s,l ranges are in 0.0 - 1.0
-
-    var r = this.r, g = this.g, b = this.b;
-
-    var max = Math.max(Math.max( r, g), b );
-    var min = Math.min(Math.min( r, g), b );
-
-    var hue, saturation;
-    var lightness = ( min + max ) / 2.0;
-
-    if ( min == max ) {
-
-      hue = 0;
-      saturation = 0;
-
-    } else {
-
-      var delta = max - min;
-
-      saturation = lightness <= 0.5 ? delta / ( max + min ) : delta / ( 2 - max - min );
-
-      if (max == r) {
-        hue = ( g - b ) / delta + ( g < b ? 6 : 0 );
-      } else if (max == g) {
-        hue = ( b - r ) / delta + 2;
-      } else if (max == b) {
-        hue = ( r - g ) / delta + 4;
-      }
-
-      hue /= 6;
-
-    }
-
-    return [hue, saturation, lightness];
-
-  }
-
-  Color offsetHSL( h, s, l ) {
-
-    var hsl = this.HSL;
-
-    hsl[0] += h; hsl[1] += s; hsl[2] += l;
-
-    setHSL( hsl[0], hsl[1], hsl[2] );
-
-    return this;
-
   }
 
   Color setHex( num hex ) {

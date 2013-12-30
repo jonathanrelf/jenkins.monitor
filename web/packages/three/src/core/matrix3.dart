@@ -6,9 +6,9 @@ part of three;
  */
 
 class Matrix3  {
-  Float32List elements;
+  Float32Array elements;
 
-  Matrix3() : elements = new Float32List(9);
+  Matrix3() : elements = new Float32Array(9);
 
   getInverse( Matrix4 matrix ) {
 

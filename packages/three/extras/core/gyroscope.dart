@@ -9,12 +9,12 @@ class Gyroscope extends Object3D {
   Vector3 scaleWorld, scaleObject;
 
   Gyroscope() :
-    translationWorld = new Vector3.zero(),
-    translationObject = new Vector3.zero(),
-    rotationWorld = new Quaternion.identity(),
-    rotationObject = new Quaternion.identity(),
-    scaleWorld = new Vector3.zero(),
-    scaleObject = new Vector3.zero(),
+    translationWorld = new Vector3(),
+    translationObject = new Vector3(),
+    rotationWorld = new Quaternion(),
+    rotationObject = new Quaternion(),
+    scaleWorld = new Vector3(),
+    scaleObject = new Vector3(),
     super();
 
   updateMatrixWorld( {bool force: false} ) {
@@ -29,17 +29,17 @@ class Gyroscope extends Object3D {
 
       if ( parent != null ) {
 
-        matrixWorld = parent.matrixWorld * matrix;
+        matrixWorld.multiply( parent.matrixWorld, matrix );
 
-        decompose( matrixWorld, translationWorld, rotationWorld, scaleWorld );
-        decompose( matrix, translationObject, rotationObject, scaleObject );
+        matrixWorld.decompose( translationWorld, rotationWorld, scaleWorld );
+        matrix.decompose( translationObject, rotationObject, scaleObject );
 
-        compose( matrixWorld, translationWorld, rotationObject, scaleWorld );
+        matrixWorld.compose( translationWorld, rotationObject, scaleWorld );
 
 
       } else {
 
-        matrixWorld.setFrom( matrix );
+        matrixWorld.copy( matrix );
 
       }
 

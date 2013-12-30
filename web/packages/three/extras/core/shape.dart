@@ -19,7 +19,7 @@ class Shape extends Path {
 
   // Convenience method to return ExtrudeGeometry
   extrude( {amount: 100,
-            bevelThickness: 6.0,
+            bevelThickness: 6,
             bevelSize: null,
             bevelSegments: 3,
             bevelEnabled: true,
@@ -30,7 +30,7 @@ class Shape extends Path {
             material,
             extrudeMaterial} ) {
 
-    if (bevelSize == null) bevelSize = bevelThickness - 2.0;
+    if (bevelSize == null) bevelSize = bevelThickness - 2;
 
     return new ExtrudeGeometry( [this], amount: amount,
                                         bevelThickness: bevelThickness,
@@ -91,7 +91,7 @@ class Shape extends Path {
 
   }
 
-  extractPoints( [num divisions] ) {
+  extractPoints( {num divisions} ) {
 
   	if (useSpacedPoints) {
   		return extractAllSpacedPoints(divisions);

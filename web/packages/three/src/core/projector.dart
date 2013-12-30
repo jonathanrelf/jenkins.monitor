@@ -30,8 +30,7 @@ class Projector {
   Vector3 _vector3;
   Vector4 _vector4;
 
-  Vector4 _clippedVertex1PositionScreen;
-  Vector4 _clippedVertex2PositionScreen;
+  Vector4 _clippedVertex1PositionScreen, _clippedVertex2PositionScreen;
 
   ProjectorRenderData _renderData;
 
@@ -50,31 +49,33 @@ class Projector {
         //_renderData = { "objects": [], "sprites": [], "lights": [], "elements": [] };
         _renderData = new ProjectorRenderData(),
 
-        _vector3 = new Vector3.zero(),
-        _vector4 = new Vector4(0.0, 0.0, 0.0, 1.0),
+        _vector3 = new Vector3(),
+        _vector4 = new Vector4(),
 
-        _viewProjectionMatrix = new Matrix4.identity(),
-        _modelViewProjectionMatrix = new Matrix4.identity(),
+        _viewProjectionMatrix = new Matrix4(),
+        _modelViewProjectionMatrix = new Matrix4(),
 
         _frustum = new Frustum(),
 
-        _clippedVertex1PositionScreen = new Vector4(0.0, 0.0, 0.0, 1.0),
-        _clippedVertex2PositionScreen = new Vector4(0.0, 0.0, 0.0, 1.0);
+        _clippedVertex1PositionScreen = new Vector4(),
+        _clippedVertex2PositionScreen = new Vector4();
 
   Vector3 projectVector( Vector3 vector, Camera camera ) {
-    camera.matrixWorldInverse.copyInverse(camera.matrixWorld);
+    camera.matrixWorldInverse.getInverse( camera.matrixWorld );
 
-    _viewProjectionMatrix = camera.projectionMatrix * camera.matrixWorldInverse;
+    _viewProjectionMatrix.multiply( camera.projectionMatrix, camera.matrixWorldInverse );
+    _viewProjectionMatrix.multiplyVector3( vector );
 
-    return vector.applyProjection(_viewProjectionMatrix);
+    return vector;
   }
 
   Vector3 unprojectVector( Vector3 vector, Camera camera ) {
-    camera.projectionMatrixInverse.copyInverse(camera.projectionMatrix);
+    camera.projectionMatrixInverse.getInverse( camera.projectionMatrix );
 
-    _viewProjectionMatrix = camera.matrixWorld * camera.projectionMatrixInverse;
+    _viewProjectionMatrix.multiply( camera.matrixWorld, camera.projectionMatrixInverse );
+    _viewProjectionMatrix.multiplyVector3( vector );
 
-    return vector.applyProjection(_viewProjectionMatrix);
+    return vector;
   }
 
   /**
@@ -94,7 +95,7 @@ class Projector {
     unprojectVector( end, camera );
 
     // find direction from vector to end
-    end.sub( vector ).normalize();
+    end.subSelf( vector ).normalize();
 
     return new Ray( vector, end );
   }
@@ -124,8 +125,8 @@ class Projector {
 
           } else {
 
-            _vector3 = object.matrixWorld.getTranslation();
-            _vector3.applyProjection(_viewProjectionMatrix);
+            _vector3.copy( object.matrixWorld.getPosition() );
+            _viewProjectionMatrix.multiplyVector3( _vector3 );
             _object.z = _vector3.z;
 
           }
@@ -147,8 +148,8 @@ class Projector {
 
         } else {
 
-          _vector3 = object.matrixWorld.getTranslation();
-          _vector3.applyProjection(_viewProjectionMatrix);
+          _vector3.copy( object.matrixWorld.getPosition() );
+          _viewProjectionMatrix.multiplyVector3( _vector3 );
           _object.z = _vector3.z;
 
         }
@@ -166,8 +167,8 @@ class Projector {
 
         } else {
 
-          _vector3 = object.matrixWorld.getTranslation();
-          _vector3.applyProjection(_viewProjectionMatrix);
+          _vector3.copy( object.matrixWorld.getPosition() );
+          _viewProjectionMatrix.multiplyVector3( _vector3 );
           _object.z = _vector3.z;
 
         }
@@ -209,11 +210,11 @@ class Projector {
     Geometry geometry;
     List geometryMaterials;
     List<Vector3> vertices;
-    Vector3 vertex;
+    Vertex vertex;
     Vector3 vertexPositionScreen, normal;
-    List<Face> faces;
-    Face face;
-    RenderableFace _face;
+    List<IFace3> faces;
+    IFace3 face;
+    IRenderableFace3 _face;
     List faceVertexNormals;
     List<List> faceVertexUvs;
     RenderableVertex v1, v2, v3, v4;
@@ -236,9 +237,9 @@ class Projector {
       camera.updateMatrixWorld();
     }
 
-    camera.matrixWorldInverse.copyInverse(camera.matrixWorld);
+    camera.matrixWorldInverse.getInverse( camera.matrixWorld );
 
-    _viewProjectionMatrix = camera.projectionMatrix * camera.matrixWorldInverse;
+    _viewProjectionMatrix.multiply( camera.projectionMatrix, camera.matrixWorldInverse );
 
     _frustum.setFromMatrix( _viewProjectionMatrix );
 
@@ -260,21 +261,18 @@ class Projector {
         faces = geometry.faces;
         faceVertexUvs = geometry.faceVertexUvs;
 
-        extractRotation( object.matrixRotationWorld, modelMatrix );
-        rotationMatrix = object.matrixRotationWorld;
+        rotationMatrix = object.matrixRotationWorld.extractRotation( modelMatrix );
 
         isFaceMaterial = (object.material is MeshFaceMaterial);
         side = object.material.side;
 
-        vertices.forEach((Vector3 v) {
+        vertices.forEach((v) {
           _vertex = getNextVertexInPool();
-          _vertex.positionWorld.setFrom(v);
+          _vertex.positionWorld.copy( v );
 
-          _vertex.positionWorld.applyProjection(modelMatrix);
-          _vertex.positionScreen = new Vector4(_vertex.positionWorld.x,
-              _vertex.positionWorld.y,
-              _vertex.positionWorld.z, 1.0); //  _vertex.positionWorld.clone();
-          _viewProjectionMatrix.transform( _vertex.positionScreen );
+          modelMatrix.multiplyVector3( _vertex.positionWorld );
+          _vertex.positionScreen.copy( _vertex.positionWorld );
+          _viewProjectionMatrix.multiplyVector4( _vertex.positionScreen );
           _vertex.positionScreen.x /= _vertex.positionScreen.w;
           _vertex.positionScreen.y /= _vertex.positionScreen.w;
 
@@ -292,62 +290,89 @@ class Projector {
 
           side = material.side;
 
-          var vtx = face.indices.map((idx) => _vertexPool[idx]).toList();
+          if ( face is Face3 ) {
+            v1 = _vertexPool[ face.a ];
+            v2 = _vertexPool[ face.b ];
+            v3 = _vertexPool[ face.c ];
 
-          var allVtxVisible = vtx.every((v) => v.visible);
+            if ( v1.visible && v2.visible && v3.visible ) {
 
-          if (allVtxVisible) {
-            if (face.size == 3) {
               visible = (
-                  ( ( vtx[2].positionScreen.x - vtx[0].positionScreen.x ) * ( vtx[1].positionScreen.y - vtx[0].positionScreen.y ) -
-                    ( vtx[2].positionScreen.y - vtx[0].positionScreen.y ) * ( vtx[1].positionScreen.x - vtx[0].positionScreen.x ) ) < 0);
-            } else if (face.size == 4) {
-              visible = ( vtx[3].positionScreen.x - vtx[0].positionScreen.x ) * ( vtx[1].positionScreen.y - vtx[0].positionScreen.y ) -
-                  ( vtx[3].positionScreen.y - vtx[0].positionScreen.y ) * ( vtx[1].positionScreen.x - vtx[0].positionScreen.x ) < 0 ||
-                  ( vtx[1].positionScreen.x - vtx[2].positionScreen.x ) * ( vtx[3].positionScreen.y - vtx[2].positionScreen.y ) -
-                  ( vtx[1].positionScreen.y - vtx[2].positionScreen.y ) * ( vtx[3].positionScreen.x - vtx[2].positionScreen.x ) < 0;
-            }
+                  ( ( v3.positionScreen.x - v1.positionScreen.x ) * ( v2.positionScreen.y - v1.positionScreen.y ) -
+                    ( v3.positionScreen.y - v1.positionScreen.y ) * ( v2.positionScreen.x - v1.positionScreen.x ) ) < 0);
 
-            if ( side == DoubleSide || visible == ( side == FrontSide ) ) {
+              if ( side == DoubleSide || visible == ( side == FrontSide ) ) {
 
-                _face = (face.size == 3) ? getNextFace3InPool() : getNextFace4InPool();
 
-                _face.vertices = vtx.map((v) => v.clone()).toList(growable: false);
+              _face = getNextFace3InPool();
 
+              _face.v1.copy( v1 );
+              _face.v2.copy( v2 );
+              _face.v3.copy( v3 );
+
+              } else {
+                continue;
+              }
             } else {
               continue;
             }
-          } else {
-            continue;
+
+          } else if ( face is Face4 ) {
+
+            Face4 face4 = face;
+            v1 = _vertexPool[ face4.a ];
+            v2 = _vertexPool[ face4.b ];
+            v3 = _vertexPool[ face4.c ];
+            v4 = _vertexPool[ face4.d ];
+
+            if ( v1.visible && v2.visible && v3.visible && v4.visible ) {
+
+              visible = ( v4.positionScreen.x - v1.positionScreen.x ) * ( v2.positionScreen.y - v1.positionScreen.y ) -
+                  ( v4.positionScreen.y - v1.positionScreen.y ) * ( v2.positionScreen.x - v1.positionScreen.x ) < 0 ||
+                  ( v2.positionScreen.x - v3.positionScreen.x ) * ( v4.positionScreen.y - v3.positionScreen.y ) -
+                  ( v2.positionScreen.y - v3.positionScreen.y ) * ( v4.positionScreen.x - v3.positionScreen.x ) < 0;
+
+              if ( side == DoubleSide || visible == ( side == FrontSide ) ) {
+
+                _face = getNextFace4InPool();
+
+                _face.v1.copy( v1 );
+                _face.v2.copy( v2 );
+                _face.v3.copy( v3 );
+                (_face as IRenderableFace4).v4.copy( v4 );
+              } else {
+                continue;
+              }
+            } else {
+              continue;
+            }
           }
 
-          _face.normalWorld.setFrom( face.normal );
+          _face.normalWorld.copy( face.normal );
 
 		      if ( visible == false && ( side == BackSide || side == DoubleSide ) ) _face.normalWorld.negate();
-		      _face.normalWorld.applyProjection(rotationMatrix);
+          rotationMatrix.multiplyVector3( _face.normalWorld );
 
-          _face.centroidWorld.setFrom( face.centroid );
-          _face.centroidWorld.applyProjection(modelMatrix);
+          _face.centroidWorld.copy( face.centroid );
+          modelMatrix.multiplyVector3( _face.centroidWorld );
 
-          _face.centroidScreen.setFrom( _face.centroidWorld );
-          _face.centroidScreen.applyProjection(_viewProjectionMatrix);
+          _face.centroidScreen.copy( _face.centroidWorld );
+          _viewProjectionMatrix.multiplyVector3( _face.centroidScreen );
 
           faceVertexNormals = face.vertexNormals;
 
           nl = faceVertexNormals.length;
           for ( n = 0; n < nl; n ++ ) {
             normal = _face.vertexNormalsWorld[ n ];
-            normal.setFrom( faceVertexNormals[ n ] );
+            normal.copy( faceVertexNormals[ n ] );
 
             if ( !visible && ( side == BackSide || side == DoubleSide ) ) normal.negate();
 
-            normal.applyProjection(rotationMatrix);
+            rotationMatrix.multiplyVector3( normal );
           }
 
           cl = faceVertexUvs.length;
           for ( c = 0; c < cl; c ++ ) {
-            if ( faceVertexUvs[c].length == 0 ) continue;
-
             List<UV> uvs = faceVertexUvs[ c ][ f ];
 
             if ( uvs == null ) continue;
@@ -370,14 +395,13 @@ class Projector {
         }
 
       } else if ( object is Line ) {
-        _modelViewProjectionMatrix = _viewProjectionMatrix * modelMatrix;
+        _modelViewProjectionMatrix.multiply( _viewProjectionMatrix, modelMatrix );
 
         vertices = object.geometry.vertices;
 
         v1 = getNextVertexInPool();
-        Vector3 vec = vertices[ 0 ];
-        v1.positionScreen = new Vector4(vec.x, vec.y, vec.z, 1.0);
-        _modelViewProjectionMatrix.transform( v1.positionScreen );
+        v1.positionScreen.copy( vertices[ 0 ] );
+        _modelViewProjectionMatrix.multiplyVector4( v1.positionScreen );
 
       // Handle LineStrip and LinePieces
         var step = object.type == LinePieces ? 2 : 1;
@@ -386,25 +410,24 @@ class Projector {
         for ( v = 1; v < vl; v++ ) {
 
           v1 = getNextVertexInPool();
-          Vector3 vec = vertices[ v ];
-          v1.positionScreen = new Vector4(vec.x, vec.y, vec.z, 1.0);
-          _modelViewProjectionMatrix.transform( v1.positionScreen );
+          v1.positionScreen.copy( vertices[ v ] );
+          _modelViewProjectionMatrix.multiplyVector4( v1.positionScreen );
 
           if ( ( v + 1 ) % step > 0 ) continue;
 
           v2 = _vertexPool[ _vertexCount - 2 ];
 
-          _clippedVertex1PositionScreen.setFrom(v1.positionScreen);
-          _clippedVertex2PositionScreen.setFrom(v2.positionScreen);
+          _clippedVertex1PositionScreen.copy( v1.positionScreen );
+          _clippedVertex2PositionScreen.copy( v2.positionScreen );
 
           if ( clipLine( _clippedVertex1PositionScreen, _clippedVertex2PositionScreen ) ) {
             // Perform the perspective divide
-            _clippedVertex1PositionScreen /= _clippedVertex1PositionScreen.w;
-            _clippedVertex2PositionScreen /= _clippedVertex2PositionScreen.w;
+            _clippedVertex1PositionScreen.multiplyScalar( 1 / _clippedVertex1PositionScreen.w );
+            _clippedVertex2PositionScreen.multiplyScalar( 1 / _clippedVertex2PositionScreen.w );
 
             _line = getNextLineInPool();
-            _line.v1.positionScreen.setFrom(_clippedVertex1PositionScreen);
-            _line.v2.positionScreen.setFrom(_clippedVertex2PositionScreen);
+            _line.v1.positionScreen.copy( _clippedVertex1PositionScreen );
+            _line.v2.positionScreen.copy( _clippedVertex2PositionScreen );
 
             _line.z = Math.max( _clippedVertex1PositionScreen.z, _clippedVertex2PositionScreen.z );
 
@@ -423,8 +446,8 @@ class Projector {
       modelMatrix = object.matrixWorld;
 
       if ( object is Particle ) {
-        _vector4.setValues ( modelMatrix[12], modelMatrix[13], modelMatrix[14], 1.0 );
-        _viewProjectionMatrix.transform( _vector4 );
+        _vector4.setValues( modelMatrix.elements[12], modelMatrix.elements[13], modelMatrix.elements[14], 1 );
+        _viewProjectionMatrix.multiplyVector4( _vector4 );
 
         _vector4.z /= _vector4.w;
 
@@ -436,8 +459,8 @@ class Projector {
 
           _particle.rotation = object.rotation.z;
 
-          _particle.scale.x = object.scale.x * ( _particle.x - ( _vector4.x + camera.projectionMatrix[0] ) / ( _vector4.w + camera.projectionMatrix[12] ) ).abs();
-          _particle.scale.y = object.scale.y * ( _particle.y - ( _vector4.y + camera.projectionMatrix[5] ) / ( _vector4.w + camera.projectionMatrix[13] ) ).abs();
+          _particle.scale.x = object.scale.x * ( _particle.x - ( _vector4.x + camera.projectionMatrix.elements[0] ) / ( _vector4.w + camera.projectionMatrix.elements[12] ) ).abs();
+          _particle.scale.y = object.scale.y * ( _particle.y - ( _vector4.y + camera.projectionMatrix.elements[5] ) / ( _vector4.w + camera.projectionMatrix.elements[13] ) ).abs();
 
           _particle.material = object.material as Material;
 
@@ -489,7 +512,7 @@ class Projector {
     return vertex;
   }
 
-  RenderableFace getNextFace3InPool() {
+  IRenderableFace3 getNextFace3InPool() {
     //TODO: make sure I've interpreted this logic correctly
     // RenderableFace3 face = _face3Pool[ _face3Count ] = _face3Pool[ _face3Count ] || new RenderableFace3();
     RenderableFace3 face;
@@ -505,7 +528,7 @@ class Projector {
     return face;
   }
 
-  RenderableFace getNextFace4InPool() {
+  IRenderableFace4 getNextFace4InPool() {
 
     RenderableFace4 face;
     if ( _face4Count < _face4Pool.length ) {
@@ -554,7 +577,7 @@ class Projector {
   int painterSort( a, b ) => b.z.compareTo(a.z);
 
   bool clipLine( Vector4 s1, Vector4 s2 ) {
-    double alpha1 = 0.0, alpha2 = 1.0,
+    num alpha1 = 0, alpha2 = 1,
 
     // Calculate the boundary coordinate of each vertex for the near and far clip planes,
     // Z = -1 and Z = +1, respectively.
@@ -594,8 +617,8 @@ class Projector {
         return false;
       } else {
         // Update the s1 and s2 vertices to match the clipped line segment.
-        s1 = lerp4(s1, s2, alpha1 );
-        s2 = lerp4(s2, s1, 1.0 - alpha2 );
+        s1.lerpSelf( s2, alpha1 );
+        s2.lerpSelf( s1, 1 - alpha2 );
 
         return true;
       }

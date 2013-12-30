@@ -5,7 +5,7 @@ class Bone extends Object3D {
   var skin;
   Matrix4 skinMatrix;
 
-  Bone(this.skin) : skinMatrix = new Matrix4.identity(), super();
+  Bone(this.skin) : skinMatrix = new Matrix4(), super();
 
   update( [Matrix4 parentSkinMatrix, forceUpdate = false] ) {
 
@@ -22,11 +22,11 @@ class Bone extends Object3D {
 
       if( parentSkinMatrix != null) {
 
-        skinMatrix = parentSkinMatrix * matrix;
+        skinMatrix.multiply( parentSkinMatrix, matrix );
 
       } else {
 
-        skinMatrix = matrix.clone();
+        skinMatrix.copy( matrix );
 
       }
 

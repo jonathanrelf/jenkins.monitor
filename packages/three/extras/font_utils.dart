@@ -21,32 +21,31 @@
 
 library FontUtils;
 
-import 'package:vector_math/vector_math.dart';
 import "package:three/three.dart";
 import "core/shape_utils.dart" as ShapeUtils;
 
-var  _face = "helvetiker",
-     _weight = "normal",
-     _style = "normal",
-     _size = 150,
-     _divisions = 10;
+var  face = "helvetiker",
+     weight = "normal",
+     style = "normal",
+     size = 150,
+     divisions = 10;
 
 /// Map of [FontFace]
-Map<String, Map<String, Map<String, Map<String, Map>>>> _faces = {};
+Map<String, Map<String, Map<String, FontFace>>> faces = {};
 
-Map<String, Map> getFace() => _faces[ _face ][ _weight ][ _style ];
+FontFace getFace() => faces[ face ][ weight ][ style ];
 
 loadFace( data ) {
 
-  var family = data["familyName"].toLowerCase();
+  var family = data.familyName.toLowerCase();
 
-  if (_faces[ family ] == null) _faces[ family ] = {};
+  if (faces[ family ] == null) faces[ family ] = {};
 
-  if (_faces[ family ][ data["cssFontWeight"] ] == null) _faces[ family ][ data["cssFontWeight"] ] = {};
-  _faces[ family ][ data["cssFontWeight"] ][ data["cssFontStyle"] ] = data;
+  if (faces[ family ][ data.cssFontWeight ] == null) faces[ family ][ data.cssFontWeight ] = {};
+  faces[ family ][ data.cssFontWeight ][ data.cssFontStyle ] = data;
 
   // TODO - Parse data
-  var face = _faces[ family ][ data["cssFontWeight"] ][ data["cssFontStyle"] ] = data;
+  var face = faces[ family ][ data.cssFontWeight ][ data.cssFontStyle ] = data;
 
   return data;
 
@@ -60,7 +59,7 @@ drawText( String text ) {
 
   var i, p,
     face = getFace(),
-    scale = _size / face["resolution"],
+    scale = size / face.resolution,
     offset = 0,
     chars = text.split( '' ),
     length = chars.length;
@@ -72,9 +71,9 @@ drawText( String text ) {
     var path = new Path();
 
     var ret = extractGlyphPoints( chars[ i ], face, scale, offset, path );
-    offset += ret["offset"];
+    offset += ret.offset;
 
-    fontPaths.add( ret["path"] );
+    fontPaths.add( ret.path );
 
   }
 
@@ -98,7 +97,7 @@ drawText( String text ) {
 
 }
 
-extractGlyphPoints ( String c, face, scale, offset, path ) {
+extractGlyphPoints ( String c, FontFace face, scale, offset, path ) {
 
   List<Vector2> pts = [];
 
@@ -108,18 +107,15 @@ extractGlyphPoints ( String c, face, scale, offset, path ) {
     x, y, cpx, cpy, cpx0, cpy0, cpx1, cpy1, cpx2, cpy2,
     laste;
 
-  var glyph = face["glyphs"][ c ];
-  if (glyph == null) glyph = face["glyphs"][ '?' ];
+  Glyph glyph = face.glyphs[ c ];
+  if (glyph == null) glyph = face.glyphs[ '?' ];
 
-  if ( glyph == null ) return null;
+  if ( glyph == null ) return;
 
-  if ( glyph["o"] != null) {
+  if ( glyph.o != null) {
 
-    outline = glyph["_cachedOutline"];
-    if (outline == null) {
-      glyph["_cachedOutline"] = glyph["o"].split( ' ' );
-      outline = glyph["_cachedOutline"];
-    }
+    outline = glyph._cachedOutline;
+    if (outline == null)  glyph._cachedOutline = glyph.o.split( ' ' );
     length = outline.length;
 
     scaleX = scale;
@@ -137,8 +133,8 @@ extractGlyphPoints ( String c, face, scale, offset, path ) {
 
         // Move To
 
-        x = int.parse(outline[ i++ ]) * scaleX + offset;
-        y = int.parse(outline[ i++ ]) * scaleY;
+        x = outline[ i++ ] * scaleX + offset;
+        y = outline[ i++ ] * scaleY;
 
         path.moveTo( x, y );
         break;
@@ -147,8 +143,8 @@ extractGlyphPoints ( String c, face, scale, offset, path ) {
 
         // Line To
 
-        x = int.parse(outline[ i++ ]) * scaleX + offset;
-        y = int.parse(outline[ i++ ]) * scaleY;
+        x = outline[ i++ ] * scaleX + offset;
+        y = outline[ i++ ] * scaleY;
         path.lineTo(x,y);
         break;
 
@@ -156,14 +152,14 @@ extractGlyphPoints ( String c, face, scale, offset, path ) {
 
         // QuadraticCurveTo
 
-        cpx  = int.parse(outline[ i++ ]) * scaleX + offset;
-        cpy  = int.parse(outline[ i++ ]) * scaleY;
-        cpx1 = int.parse(outline[ i++ ]) * scaleX + offset;
-        cpy1 = int.parse(outline[ i++ ]) * scaleY;
+        cpx  = outline[ i++ ] * scaleX + offset;
+        cpy  = outline[ i++ ] * scaleY;
+        cpx1 = outline[ i++ ] * scaleX + offset;
+        cpy1 = outline[ i++ ] * scaleY;
 
         path.quadraticCurveTo(cpx1, cpy1, cpx, cpy);
 
-        if (pts.length > 0) laste = pts[ pts.length - 1 ];
+        laste = pts[ pts.length - 1 ];
 
         if ( laste != null ) {
 
@@ -185,16 +181,16 @@ extractGlyphPoints ( String c, face, scale, offset, path ) {
 
         // Cubic Bezier Curve
 
-        cpx  = int.parse(outline[ i++ ]) *  scaleX + offset;
-        cpy  = int.parse(outline[ i++ ]) *  scaleY;
-        cpx1 = int.parse(outline[ i++ ]) *  scaleX + offset;
-        cpy1 = int.parse(outline[ i++ ]) * -scaleY;
-        cpx2 = int.parse(outline[ i++ ]) *  scaleX + offset;
-        cpy2 = int.parse(outline[ i++ ]) * -scaleY;
+        cpx  = outline[ i++ ] *  scaleX + offset;
+        cpy  = outline[ i++ ] *  scaleY;
+        cpx1 = outline[ i++ ] *  scaleX + offset;
+        cpy1 = outline[ i++ ] * -scaleY;
+        cpx2 = outline[ i++ ] *  scaleX + offset;
+        cpy2 = outline[ i++ ] * -scaleY;
 
         path.bezierCurveTo( cpx, cpy, cpx1, cpy1, cpx2, cpy2 );
 
-        if (pts.length > 0) laste = pts[ pts.length - 1 ];
+        laste = pts[ pts.length - 1 ];
 
         if ( laste != null ) {
 
@@ -220,7 +216,7 @@ extractGlyphPoints ( String c, face, scale, offset, path ) {
 
 
 
-  return { "offset": glyph["ha"]*scale, "path":path};
+  return { "offset": glyph.ha*scale, "path":path};
 }
 
 generateShapes( text, [ int size = 100,
@@ -229,31 +225,24 @@ generateShapes( text, [ int size = 100,
                         String weight = "normal",
                         String style = "normal"] ) {
 
-  var face = _faces[font][weight][style];
+  var face = faces[font][weight][style];
 
-  if (_faces == null) {
+  if (faces == null) {
     face = new FontFace(size: size, divisions: curveSegments);
-    _faces[font][weight][style] = face;
+    faces[font][weight][style] = face;
   }
-  
-  _size = size;
-  _divisions = curveSegments;
-
-  _face = font;
-  _weight = weight;
-  _style = style;
 
   // Get a Font data json object
 
   var data = drawText( text );
 
-  var paths = data["paths"];
+  var paths = data.paths;
   var shapes = [];
   var pl = paths.length;
 
   for ( var p = 0; p < pl; p ++ ) {
 
-    shapes.addAll(paths[ p ].toShapes() );
+    shapes.add(paths[ p ].toShapes() );
 
   }
 
