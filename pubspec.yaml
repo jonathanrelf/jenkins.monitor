@@ -4,5 +4,4 @@ dependencies:
   browser: any
   json: any
   json_object: any
-  three: any
   vector_math: any
