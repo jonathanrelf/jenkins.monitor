@@ -3741,7 +3741,7 @@ return typeof a==="object"&&a!==null&&!!z.$iscv},
 $is_aB:true},"+FilteredElementList__filtered_closure": 0,GS:{"":"Tp;",
 call$1:function(a){return J.Mp(a)},
 "+call:1:0":1,
-$is_aB:true},"+FilteredElementList_removeRange_closure": 0}],["jenkins","file:///C:/Users/jonathan.relf/dart/Test3D/web/jenkins.dart",,Y,{Pw:{"":"FY;xv-,cd-,cp-",
+$is_aB:true},"+FilteredElementList_removeRange_closure": 0}],["jenkins","file:///C:/Dev/jenkins.monitor/web/jenkins.dart",,Y,{Pw:{"":"FY;xv-,cd-,cp-",
 SF:function(a){var z,y,x,w,v
 z=P.A(null,Y.ei)
 H.VM(z,[Y.ei])
@@ -3890,7 +3890,7 @@ z.u(z,a,E.ib(b,null))}else if(typeof b==="object"&&b!==null&&(b.constructor===Ar
 $is_bh:true},"+JsonObject__extractElements_closure": 0,LA:{"":"a;O9-",
 bu:function(a){return"JsonObjectException: "+this.O9},
 "+toString:0:0":1,
-static:{mo:function(a){return new E.LA(a)},"+new JsonObjectException:1:0":1,"*":[0]}},"+JsonObjectException": 0}],["","file:///C:/Users/jonathan.relf/dart/Test3D/web/test3d.dart",,N,{E2:function(){N.C1()
+static:{mo:function(a){return new E.LA(a)},"+new JsonObjectException:1:0":1,"*":[0]}},"+JsonObjectException": 0}],["","file:///C:/Dev/jenkins.monitor/web/test3d.dart",,N,{E2:function(){N.C1()
 N.da(null)},"+main:0:0":1,da:function(a){return P.SZ(C.xB,new N.P4())},"+startTimeout:1:0":1,"*startTimeout":[0],C1:function(){W.lt("http://build.esendex.com/api/json?pretty=true&depth=2&tree=jobs[name,color,downstreamProjects[name],upstreamProjects[name],lastBuild[number,builtOn,duration,timestamp,result,actions[causes[shortDescription,upstreamProject,upstreamBuild],lastBuiltRevision[branch[name]]],changeSet[items[msg,author[fullName],date]]]]",null,null,null,null,null,null,null).ml(N.ZL)},"+renderJobDetails:0:0":1,jf:function(a){var z=Y.zE(J.CA(a))
 $.rY=P.L5(null,null,null,J.O,[J.Q,Y.ei])
 J.kH(z.gRo(),N.x3)
@@ -3921,7 +3921,7 @@ n=N.es(p)
 m=J.OG(n)
 if(m.gB(m)>0)o.appendChild(n)
 s.appendChild(o)
-if(v.className!=="categoryWithFailure")v.className="categoryBuilding"}if(J.xC(J.KC(p.ghu()),"FAILURE")){document.querySelector("body").className="failed"
+if(v.className!=="categoryWithFailure")v.className="categoryBuilding"}if(J.xC(J.KC(p.ghu()),"FAILURE")&&!J.xC(p.gih(),"disabled")){document.querySelector("body").className="failed"
 l=document.createElement("li",null)
 l.className="failed"
 l.textContent=J.O6(p)
