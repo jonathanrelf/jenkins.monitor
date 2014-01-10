@@ -74,7 +74,7 @@ void handleCategories(Map<String,List<Job>> categories) {
         jobList.append(buildingJobInfo);
         if (categoryInfo.className != "categoryWithFailure") { categoryInfo.className = "categoryBuilding"; }
       }
-      if (job.lastBuild.result == "FAILURE") {
+      if (job.lastBuild.result == "FAILURE" && job.color != "disabled") {
         querySelector("body").className="failed";
         var failedJobInfo = new LIElement();
         failedJobInfo.className = "failed";
