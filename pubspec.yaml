@@ -4,4 +4,5 @@ dependencies:
   browser: any
   json: any
   json_object: any
+  unittest: any
   vector_math: any

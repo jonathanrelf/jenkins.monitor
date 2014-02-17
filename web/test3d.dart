@@ -1,5 +1,5 @@
 import 'dart:html';
-import 'jenkins.dart';
+import 'jenkins/jenkins.dart';
 import 'dart:async';
 import 'package:json_object/json_object.dart'; 
 
@@ -16,25 +16,22 @@ const ms = const Duration (milliseconds: 1);
 
 void main() {
   renderJobDetails();
+  var computers = new Computers();
   var timer = startTimeout();
 }
 
-startTimeout([int milliseconds]) {
-  var duration = milliseconds == null ? TIMEOUT : ms * milliseconds;
-  return new Timer.periodic(duration, (_) { renderJobDetails(); });
-}
-
 void renderJobDetails() {
-  var url = "http://build.esendex.com/api/json?pretty=true&depth=2&tree=jobs[name,color,downstreamProjects[name],upstreamProjects[name],lastBuild[number,builtOn,duration,timestamp,result,actions[causes[shortDescription,upstreamProject,upstreamBuild],lastBuiltRevision[branch[name]]],changeSet[items[msg,author[fullName],date]]]]";
+  var url = "http://build.esendex.com/api/json?depth=2&tree=jobs[name,color,downstreamProjects[name],upstreamProjects[name],lastBuild[number,builtOn,duration,estimatedDuration,timestamp,result,actions[causes[shortDescription,upstreamProject,upstreamBuild],lastBuiltRevision[branch[name]]],changeSet[items[msg,author[fullName],date]]]]";
   var request = HttpRequest.request(url).then(onDataLoaded);
 }
 
 void onDataLoaded(HttpRequest req) {
+  Teams teamsData = new Teams(req.responseText);
   Jobs jobsData = new Jobs(req.responseText);
   
   categoriesMap = new Map<String, List<Job>>();
-  jobsData.jobs.forEach(categorise);
-  handleCategories(categoriesMap);
+  jobsData.jobsList.forEach(categorise);
+  renderCategories(categoriesMap);
 }
 
 void categorise(Job job) {
@@ -49,59 +46,91 @@ void categorise(Job job) {
   }
 }
 
-void handleCategories(Map<String,List<Job>> categories) {
-  var categoryKeys = categories.keys;
-  var categoriesInfo = new DivElement();
+void renderCategories(Map<String,List<Job>> categories) {
+  var failedJobs = 0;
+  var buildingJobs = 0;
+  bool failed = false;
   
-  for(var categoryKey in categoryKeys) {
-    var categoryInfo = new DivElement();
-    categoryInfo.className = "categoryInfo";
-    var categoryName = new HeadingElement.h2();
-       
-    var jobs = categories[categoryKey];
-    var jobList = new UListElement();
-    
-    var categoryCount = 0;
-    for(var job in jobs) {
-      if (job.color.contains("_anime")) { 
-        var buildingJobInfo = new LIElement();
-        buildingJobInfo.text = job.name;
-        buildingJobInfo.className = "building";
-        
-        var buildJobDetails = BuildJobDetails(job);
-                
-        if(buildJobDetails.children.length > 0) {buildingJobInfo.append(buildJobDetails);}
-        jobList.append(buildingJobInfo);
-        if (categoryInfo.className != "categoryWithFailure") { categoryInfo.className = "categoryBuilding"; }
-      }
-      if (job.lastBuild.result == "FAILURE" && job.color != "disabled") {
-        querySelector("body").className="failed";
-        var failedJobInfo = new LIElement();
-        failedJobInfo.className = "failed";
-        failedJobInfo.text = job.name;
-
-        var buildJobDetails = BuildJobDetails(job);      
-        if(buildJobDetails.children.length > 0) {failedJobInfo.append(buildJobDetails);}
-        jobList.append(failedJobInfo);
-        categoryInfo.className = "categoryWithFailure";
-      }
-      categoryCount++;
-    }
-    categoryName.text = categoryKey + " (" + categoryCount.toString() + ")";
-    
-    categoryInfo.append(categoryName);
-    if(jobList.children.length > 0){ categoryInfo.append(jobList);}
-    categoriesInfo.append(categoryInfo);
-  }
   var wrapperDiv = new DivElement();
   wrapperDiv.id = "wrapper";
-  wrapperDiv.append(categoriesInfo);
+  
+  for(var categoryKey in categories.keys) {
+    buildingJobs = 0;
+    failedJobs = 0;
+    
+    var categoryInfo = new DivElement();
+    categoryInfo.className = "col-md-12";
+    categoryInfo.id = "categoryInfo";
+    
+    var jobs = categories[categoryKey];
+    var jobList = new DivElement();
+    jobList.className = "btn-group-vertical";
+        
+    for(Job job in jobs) {
+      //print(job.Colour);
+      switch(job.Colour){
+        case JobStatus.DISABLED:
+          break;
+        case JobStatus.BUILDING:
+          buildingJobs += 1;
+          var buildingJobInfo = new ButtonElement();
+          buildingJobInfo.text = job.subname() + " ";
+          buildingJobInfo.className = "btn btn-default";
+          
+          var buildJobDetails = BuildJobDetails(job);
+                  
+          if(buildJobDetails.children.length > 0) {buildingJobInfo.append(buildJobDetails);}
+          jobList.append(buildingJobInfo);
+          categoryInfo.classes.add("building");
+          break;
+        case JobStatus.FAILED:
+          failedJobs += 1;
+          failed = true;
+          var failedJobInfo = new ButtonElement();
+          failedJobInfo.className = "btn btn-default";
+          failedJobInfo.text = job.subname();
+  
+          var buildJobDetails = BuildJobDetails(job);      
+          if(buildJobDetails.children.length > 0) {failedJobInfo.append(buildJobDetails);}
+          jobList.append(failedJobInfo);
+          categoryInfo.classes.add("failed");
+          break;
+        default:
+          categoryInfo.classes.add("success");
+          break;
+      }
+    }
+    
+    if (buildingJobs > 0 || failedJobs > 0) {
+
+      
+      var categoryName = new HeadingElement.h2();
+      categoryName.text = categoryKey + " ";
+      
+//      var categoryCountElement = new SpanElement();
+//      categoryCountElement.className = "badge";
+//      categoryCountElement.text = jobs.length.toString();
+//      categoryName.append(categoryCountElement);
+      categoryInfo.append(categoryName);
+      
+      if(jobList.children.length > 0){ categoryInfo.append(jobList);}
+      wrapperDiv.append(categoryInfo);
+    }
+  }
+  if(failed) { 
+    querySelector("body").className="failed"; 
+  }
+  else {
+    querySelector("body").className="";
+  }
+
   querySelector("#wrapper").replaceWith(wrapperDiv);
 }
 
-UListElement BuildJobDetails(JsonObject job) {
+DivElement BuildJobDetails(JsonObject job) {
   var branchName = "";
-  var buildJobDetails = new UListElement();
+  var buildJobDetails = new DivElement();
+  buildJobDetails.className = "btn-group-vertical";
   
   var actions = job.lastBuild.actions;
   if (actions.any((v) => v.containsKey("lastBuiltRevision"))){
@@ -109,42 +138,60 @@ UListElement BuildJobDetails(JsonObject job) {
     branchName = revision.lastBuiltRevision.branch[0].name;
   }
   
-  var buildJobBranch = new LIElement();
-  
-  var buildNumberElement = new SpanElement();
-  buildNumberElement.className = "buildNumber label";
-  var buildNumberGlyphElement = new SpanElement();
-  buildNumberGlyphElement.className = "glyphicon glyphicon-list";
-  var buildNumberTextElement = new SpanElement();
-  buildNumberTextElement.text = " " + job.lastBuild.number.toString();
-  buildNumberElement.append(buildNumberGlyphElement);
-  buildNumberElement.append(buildNumberTextElement);
-  buildJobBranch.append(buildNumberElement);
-  
-  if (branchName.length > 0){
-    var branchNameElement = new SpanElement();
-    branchNameElement.className = "branch label";
-    var branchNameGlyphElement = new SpanElement();
-    branchNameGlyphElement.className = "glyphicon glyphicon-random";
-    var branchNameTextElement = new SpanElement();
-    branchNameTextElement.text = " " + branchName;
-    branchNameElement.append(branchNameGlyphElement);
-    branchNameElement.append(branchNameTextElement);
-    buildJobBranch.append(branchNameElement);
-  }
-  
-  var nowAsEpochMilliseconds = new DateTime.now().millisecondsSinceEpoch;
-  var duration = new Duration(milliseconds: (nowAsEpochMilliseconds - job.lastBuild.timestamp)).inMinutes;
-  var durationElement = new SpanElement();
-  durationElement.className = "duration label";
-  var clockElement = new SpanElement();
-  clockElement.className = "glyphicon glyphicon-time";
-  var durationTimeElement = new SpanElement();
-  durationTimeElement.text = " " + duration.toString();
-  durationElement.append(clockElement);
-  durationElement.append(durationTimeElement);
-  buildJobBranch.append(durationElement);
+  var buildJobBranch = CreateButton(job.lastBuild.number.toString(), "glyphicon-list", "btn-default");
+  var durationTime = CreateButton(job.timePeriod, "glyphicon-time", "btn-default");
   
   buildJobDetails.append(buildJobBranch);
+  buildJobDetails.append(durationTime);
+  if(job.Colour == JobStatus.FAILED){
+    var sinceTime = CreateButton(job.lastBuild.timeSince.inMinutes.toString(), "glyphicon-exclamation-sign", "btn-default");
+    buildJobDetails.append(sinceTime);
+  }
+  
+  var progressBar = CreateProgress(job.duration, job.estimatedDuration, job.Colour == JobStatus.BUILDING, "progress-bar-warning");
+  buildJobDetails.append(progressBar);
+  
   return buildJobDetails;
 }
+
+DivElement CreateProgress(Duration currentValue, Duration maxValue, bool isBuilding, String style) {
+  var percentage = ((currentValue.inSeconds / maxValue.inSeconds) * 100).round();
+  
+  var progressDiv = new DivElement();
+  progressDiv.classes.add("progress");
+  progressDiv.classes.add("progress-striped");
+  if (isBuilding) { progressDiv.classes.add("active"); }
+  
+  var progressBarDiv = new DivElement();
+  progressBarDiv.classes.add("progress-bar");
+  progressBarDiv.classes.add(style);
+  progressBarDiv.style.width = percentage.toString() + "%"; 
+  progressBarDiv.text = percentage.toString() + "%";
+  
+  progressDiv.append(progressBarDiv);
+  return progressDiv;
+}
+
+ButtonElement CreateButton(String label, String glyphicon, String buttonType) {
+  var button = new ButtonElement();
+  button.classes.add("btn");
+  button.classes.add(buttonType);
+  
+  var glyphiconElement = new SpanElement();
+  glyphiconElement.classes.add("glyphicon");
+  glyphiconElement.classes.add(glyphicon);
+  
+  var textElement = new SpanElement();
+  textElement.text = " " + label;
+  
+  button.append(glyphiconElement);
+  button.append(textElement);
+  
+  return button;
+}
+
+startTimeout([int milliseconds]) {
+  var duration = milliseconds == null ? TIMEOUT : ms * milliseconds;
+  return new Timer.periodic(duration, (_) { renderJobDetails(); });
+}
+
