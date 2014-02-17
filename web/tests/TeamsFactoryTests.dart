@@ -1,9 +1,13 @@
 import 'package:unittest/unittest.dart';
+import '../jenkins/jenkins.dart';
 
 void main() {
+  Teams teams;
   group('TeamsFactoryTests', () {
-    setUp(() { });
+    setUp(() { 
+      teams = TeamsFactory.Create(null);
+    });
     tearDown(() { });
-    test('description', () { });
+    test('GiveTeamsFactoryWhenCreateWithNullStringThenAnEmptyTeamsObjectIsReturned', () => expect(teams, equals(new Teams())));
   });
 }

@@ -9,6 +9,7 @@ class LastBuild extends JsonObject implements ILastBuild {
   List actions;
   Duration estimatedDuration;
   Duration timeSince;
+  String branchName;
 
   LastBuild() {
     result = '';
@@ -23,6 +24,8 @@ class LastBuild extends JsonObject implements ILastBuild {
     var millisecondsSince = nowAsEpochMilliseconds - lastBuildDetails.timestamp;
     var durationSince = new Duration(milliseconds: millisecondsSince);
     
+    
+    
     var lastBuild = new LastBuild();
     lastBuild.duration = duration;
     lastBuild.number = lastBuildDetails.number;
@@ -32,6 +35,12 @@ class LastBuild extends JsonObject implements ILastBuild {
     lastBuild.actions = lastBuildDetails.actions;
     lastBuild.estimatedDuration = estimatedDuration;
     lastBuild.timeSince = durationSince;
+    
+    var actions = lastBuildDetails.actions;
+    if (actions.any((v) => v.containsKey("lastBuiltRevision"))){
+      var revision = actions.firstWhere((v) => v.containsKey("lastBuiltRevision"));
+      lastBuild.branchName = revision.lastBuiltRevision.branch[0].name;
+    }
     return lastBuild;
   }
 }

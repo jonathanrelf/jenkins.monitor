@@ -14,6 +14,7 @@ class Job extends JsonObject implements IJob {
     var jobDetails = new JsonObject.fromJsonString(jsonString);
     name = jobDetails.name;
     teamName = name.toLowerCase().split('.')[0];
+
     Colour = parseColor(jobDetails.color);
     duration = null;
     estimatedDuration = null;

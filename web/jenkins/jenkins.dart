@@ -15,4 +15,5 @@ part "ITeam.dart";
 part "Team.dart";
 part "ITeams.dart";
 part "Teams.dart";
+part "TeamsFactory.dart";
 part "Computers.dart";

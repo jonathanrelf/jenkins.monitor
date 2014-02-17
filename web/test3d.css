@@ -16,6 +16,18 @@ body {
   font-weight: bold;
   background-color: red;
 }
+
+.progress {
+  height: 70px;
+}
+
+.large {
+  font-size:50px;
+  font-weight: bold;
+}
+.btn-lg {
+  font-size:40px;
+}
 /*
 .categoryInfo {
   display: normal;

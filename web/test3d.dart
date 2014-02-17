@@ -1,7 +1,6 @@
 import 'dart:html';
 import 'jenkins/jenkins.dart';
-import 'dart:async';
-import 'package:json_object/json_object.dart'; 
+import 'dart:async'; 
 
 int renderObjectCount;
 
@@ -50,76 +49,75 @@ void renderCategories(Map<String,List<Job>> categories) {
   var failedJobs = 0;
   var buildingJobs = 0;
   bool failed = false;
+  bool building = false;
   
   var wrapperDiv = new DivElement();
   wrapperDiv.id = "wrapper";
+  wrapperDiv.className = "row";
   
   for(var categoryKey in categories.keys) {
     buildingJobs = 0;
     failedJobs = 0;
     
     var categoryInfo = new DivElement();
-    categoryInfo.className = "col-md-12";
+    categoryInfo.classes.add("col-md-12");
+    categoryInfo.classes.add("success");
     categoryInfo.id = "categoryInfo";
     
     var jobs = categories[categoryKey];
+    var jobListRow = new DivElement();
+    jobListRow.classes.add("row");
+    
     var jobList = new DivElement();
-    jobList.className = "btn-group-vertical";
-        
+    jobList.className = "col-md-12";
+    
     for(Job job in jobs) {
-      //print(job.Colour);
+      var jobInfo = new HeadingElement.h1();
+      jobInfo.classes.add("large");
+      jobInfo.text = job.subname() + " ";
+      
       switch(job.Colour){
         case JobStatus.DISABLED:
           break;
         case JobStatus.BUILDING:
           buildingJobs += 1;
-          var buildingJobInfo = new ButtonElement();
-          buildingJobInfo.text = job.subname() + " ";
-          buildingJobInfo.className = "btn btn-default";
-          
+          building = true;
           var buildJobDetails = BuildJobDetails(job);
-                  
-          if(buildJobDetails.children.length > 0) {buildingJobInfo.append(buildJobDetails);}
-          jobList.append(buildingJobInfo);
+          if(buildJobDetails.children.length > 0) {jobInfo.append(buildJobDetails);}
+          jobList.append(jobInfo);    
+          categoryInfo.classes.remove("success");
           categoryInfo.classes.add("building");
           break;
         case JobStatus.FAILED:
           failedJobs += 1;
           failed = true;
-          var failedJobInfo = new ButtonElement();
-          failedJobInfo.className = "btn btn-default";
-          failedJobInfo.text = job.subname();
-  
-          var buildJobDetails = BuildJobDetails(job);      
-          if(buildJobDetails.children.length > 0) {failedJobInfo.append(buildJobDetails);}
-          jobList.append(failedJobInfo);
+          var buildJobDetails = BuildJobDetails(job);
+          if(buildJobDetails.children.length > 0) {jobInfo.append(buildJobDetails);}
+          jobList.append(jobInfo);
+          categoryInfo.classes.remove("success");
           categoryInfo.classes.add("failed");
           break;
         default:
-          categoryInfo.classes.add("success");
           break;
       }
     }
     
     if (buildingJobs > 0 || failedJobs > 0) {
-
-      
       var categoryName = new HeadingElement.h2();
       categoryName.text = categoryKey + " ";
-      
-//      var categoryCountElement = new SpanElement();
-//      categoryCountElement.className = "badge";
-//      categoryCountElement.text = jobs.length.toString();
-//      categoryName.append(categoryCountElement);
       categoryInfo.append(categoryName);
       
-      if(jobList.children.length > 0){ categoryInfo.append(jobList);}
+      if(jobList.children.length > 0){ 
+        jobListRow.append(jobList);
+        categoryInfo.append(jobListRow);
+      }
       wrapperDiv.append(categoryInfo);
     }
   }
   if(failed) { 
     querySelector("body").className="failed"; 
   }
+
   else {
     querySelector("body").className="";
   }
@@ -127,46 +125,59 @@ void renderCategories(Map<String,List<Job>> categories) {
   querySelector("#wrapper").replaceWith(wrapperDiv);
 }
 
-DivElement BuildJobDetails(JsonObject job) {
-  var branchName = "";
-  var buildJobDetails = new DivElement();
-  buildJobDetails.className = "btn-group-vertical";
+DivElement BuildJobDetails(Job job) {
+  var buildJob = new DivElement();
   
-  var actions = job.lastBuild.actions;
-  if (actions.any((v) => v.containsKey("lastBuiltRevision"))){
-    var revision = actions.firstWhere((v) => v.containsKey("lastBuiltRevision"));
-    branchName = revision.lastBuiltRevision.branch[0].name;
+  var buildJobDetails = new DivElement();
+  buildJobDetails.className = "btn-group";
+    
+  var buildJobBranch = CreateButton(job.lastBuild.number.toString(), "glyphicon-list", "btn-primary");
+  buildJobDetails.append(buildJobBranch);
+  
+  var durationTime = CreateButton(job.timePeriod + " min(s)", "glyphicon-time", "btn-primary");
+  buildJobDetails.append(durationTime);
+  
+  if (job.lastBuild.branchName != null && job.lastBuild.branchName != "") {
+    var buildJobBranchName = CreateButton(job.lastBuild.branchName, "glyphicon-random", "btn-primary");
+    buildJobDetails.append(buildJobBranchName);
   }
   
-  var buildJobBranch = CreateButton(job.lastBuild.number.toString(), "glyphicon-list", "btn-default");
-  var durationTime = CreateButton(job.timePeriod, "glyphicon-time", "btn-default");
-  
-  buildJobDetails.append(buildJobBranch);
-  buildJobDetails.append(durationTime);
   if(job.Colour == JobStatus.FAILED){
-    var sinceTime = CreateButton(job.lastBuild.timeSince.inMinutes.toString(), "glyphicon-exclamation-sign", "btn-default");
+    var sinceTime = CreateButton(job.lastBuild.timeSince.inMinutes.toString() + " mins", "glyphicon-exclamation-sign", "btn-danger");
     buildJobDetails.append(sinceTime);
   }
   
-  var progressBar = CreateProgress(job.duration, job.estimatedDuration, job.Colour == JobStatus.BUILDING, "progress-bar-warning");
-  buildJobDetails.append(progressBar);
+  buildJob.append(buildJobDetails);
   
-  return buildJobDetails;
+  var progressBar = CreateProgress(job.duration, job.estimatedDuration, job.Colour);
+  buildJob.append(progressBar);
+  
+  return buildJob;
 }
 
-DivElement CreateProgress(Duration currentValue, Duration maxValue, bool isBuilding, String style) {
+DivElement CreateProgress(Duration currentValue, Duration maxValue, JobStatus jobStatus) {
   var percentage = ((currentValue.inSeconds / maxValue.inSeconds) * 100).round();
   
   var progressDiv = new DivElement();
   progressDiv.classes.add("progress");
   progressDiv.classes.add("progress-striped");
-  if (isBuilding) { progressDiv.classes.add("active"); }
+
+  if (jobStatus == JobStatus.BUILDING) { progressDiv.classes.add("active"); }
   
   var progressBarDiv = new DivElement();
   progressBarDiv.classes.add("progress-bar");
-  progressBarDiv.classes.add(style);
+  switch(jobStatus) {
+    case JobStatus.FAILED:
+      progressBarDiv.classes.add("progress-bar-danger");
+      break;
+    case JobStatus.BUILDING:
+      progressBarDiv.classes.add("progress-bar-warning");
+      break;
+    default:
+      break;
+  }
   progressBarDiv.style.width = percentage.toString() + "%"; 
-  progressBarDiv.text = percentage.toString() + "%";
+  //progressBarDiv.text = percentage.toString() + "%";
   
   progressDiv.append(progressBarDiv);
   return progressDiv;
@@ -175,6 +186,7 @@ DivElement CreateProgress(Duration currentValue, Duration maxValue, bool isBuild
 ButtonElement CreateButton(String label, String glyphicon, String buttonType) {
   var button = new ButtonElement();
   button.classes.add("btn");
+  button.classes.add("btn-lg");
   button.classes.add(buttonType);
   
   var glyphiconElement = new SpanElement();
