@@ -1,6 +1,6 @@
 import 'dart:html';
-import 'jenkins/jenkins.dart';
 import 'dart:async'; 
+import 'jenkins/jenkins.dart';
 
 int renderObjectCount;
 
@@ -15,8 +15,8 @@ const ms = const Duration (milliseconds: 1);
 
 void main() {
   renderJobDetails();
-  var computers = new Computers();
-  var timer = startTimeout();
+  //var computers = new Computers();
+//  /var timer = startTimeout();
 }
 
 void renderJobDetails() {
@@ -72,9 +72,7 @@ void renderCategories(Map<String,List<Job>> categories) {
     jobList.className = "col-md-12";
     
     for(Job job in jobs) {
-      var jobInfo = new HeadingElement.h1();
-      jobInfo.classes.add("large");
-      jobInfo.text = job.subname() + " ";
+      var jobSpan = new ParagraphElement();
       
       switch(job.Colour){
         case JobStatus.DISABLED:
@@ -83,8 +81,8 @@ void renderCategories(Map<String,List<Job>> categories) {
           buildingJobs += 1;
           building = true;
           var buildJobDetails = BuildJobDetails(job);
-          if(buildJobDetails.children.length > 0) {jobInfo.append(buildJobDetails);}
-          jobList.append(jobInfo);    
+          if(buildJobDetails.children.length > 0) {jobList.append(buildJobDetails);}
+          jobList.append(jobSpan);    
           categoryInfo.classes.remove("success");
           categoryInfo.classes.add("building");
           break;
@@ -92,8 +90,8 @@ void renderCategories(Map<String,List<Job>> categories) {
           failedJobs += 1;
           failed = true;
           var buildJobDetails = BuildJobDetails(job);
-          if(buildJobDetails.children.length > 0) {jobInfo.append(buildJobDetails);}
-          jobList.append(jobInfo);
+          if(buildJobDetails.children.length > 0) {jobList.append(buildJobDetails);}
+          jobList.append(jobSpan);
           categoryInfo.classes.remove("success");
           categoryInfo.classes.add("failed");
           break;
@@ -128,6 +126,10 @@ void renderCategories(Map<String,List<Job>> categories) {
 DivElement BuildJobDetails(Job job) {
   var buildJob = new DivElement();
   
+  var jobInfo = new SpanElement();
+  jobInfo.classes.add("large");
+  jobInfo.text = job.subname() + " ";
+  buildJob.append(jobInfo);  
   var buildJobDetails = new DivElement();
   buildJobDetails.className = "btn-group";
     
