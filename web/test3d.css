@@ -18,13 +18,15 @@ body {
 }
 
 .progress {
-  height: 70px;
+  height: 40px;
 }
 
 .large {
   font-size:50px;
   font-weight: bold;
+
 }
+
 .btn-lg {
   font-size:40px;
 }
