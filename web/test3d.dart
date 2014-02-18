@@ -16,7 +16,7 @@ const ms = const Duration (milliseconds: 1);
 void main() {
   renderJobDetails();
   //var computers = new Computers();
-  var timer = startTimeout();
+  //var timer = startTimeout();
 }
 
 void renderJobDetails() {
@@ -61,7 +61,8 @@ void renderCategories(Map<String,List<Job>> categories) {
     
     var categoryInfo = new DivElement();
     categoryInfo.classes.add("col-md-12");
-    categoryInfo.classes.add("success");
+    categoryInfo.classes.add("category");
+    
     categoryInfo.id = "categoryInfo";
     
     var jobs = categories[categoryKey];
@@ -82,9 +83,7 @@ void renderCategories(Map<String,List<Job>> categories) {
           building = true;
           var buildJobDetails = BuildJobDetails(job);
           if(buildJobDetails.children.length > 0) {jobList.append(buildJobDetails);}
-          jobList.append(jobSpan);    
-          categoryInfo.classes.remove("success");
-          categoryInfo.classes.add("building");
+          jobList.append(jobSpan);
           break;
         case JobStatus.FAILED:
           failedJobs += 1;
@@ -92,8 +91,6 @@ void renderCategories(Map<String,List<Job>> categories) {
           var buildJobDetails = BuildJobDetails(job);
           if(buildJobDetails.children.length > 0) {jobList.append(buildJobDetails);}
           jobList.append(jobSpan);
-          categoryInfo.classes.remove("success");
-          categoryInfo.classes.add("failed");
           break;
         default:
           break;
@@ -104,10 +101,17 @@ void renderCategories(Map<String,List<Job>> categories) {
       var categoryName = new HeadingElement.h2();
       categoryName.text = categoryKey + " ";
       categoryInfo.append(categoryName);
+      jobListRow.append(jobList);
+      categoryInfo.append(jobListRow);
       
-      if(jobList.children.length > 0){ 
-        jobListRow.append(jobList);
-        categoryInfo.append(jobListRow);
+      if (failed) {
+        categoryInfo.classes.add("failed");
+      }
+      else if (building) {
+        categoryInfo.classes.add("building");
+      }
+      else {
+        categoryInfo.classes.add("success");
       }
       wrapperDiv.append(categoryInfo);
     }
@@ -125,9 +129,18 @@ void renderCategories(Map<String,List<Job>> categories) {
 
 DivElement BuildJobDetails(Job job) {
   var buildJob = new DivElement();
+  switch(job.Colour) {
+    case JobStatus.BUILDING:
+      buildJob.classes.add("building");
+      break;
+    case JobStatus.FAILED:
+      buildJob.classes.add("failed");
+      break;
+  }
   
   var jobInfo = new SpanElement();
   jobInfo.classes.add("large");
+  
   jobInfo.text = job.subname() + " ";
   buildJob.append(jobInfo);  
   var buildJobDetails = new DivElement();

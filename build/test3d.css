@@ -5,6 +5,7 @@ body {
 
 .building {
   font-weight: bold;
+  color: black;
   background-color:yellow;
 }
 
@@ -14,21 +15,39 @@ body {
 
 .failed {
   font-weight: bold;
+  color: white;
   background-color: red;
 }
 
 .progress {
   height: 40px;
+  margin-bottom: 0;
+  background-color: #ccc;
 }
 
 .large {
-  font-size:60px;
+  font-size:70px;
   font-weight: bold;
 
 }
 
+.category {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  border:5px solid;
+  border-radius:25px;
+}
+
 .btn-lg {
   font-size:40px;
+}
+
+div h2 {
+  margin: 0px;
+  padding: 0px;
+  font-size: 30px;
+  font-weight: bold;
+  font-variant: small-caps;
 }
 /*
 .categoryInfo {
