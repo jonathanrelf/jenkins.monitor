@@ -16,7 +16,7 @@ const ms = const Duration (milliseconds: 1);
 void main() {
   renderJobDetails();
   //var computers = new Computers();
-//  /var timer = startTimeout();
+  var timer = startTimeout();
 }
 
 void renderJobDetails() {
