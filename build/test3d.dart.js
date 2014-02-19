@@ -4441,27 +4441,32 @@ t.h(t,"failed")}else if(w){t=t.gDD(u)
 t.h(t,"building")}else{t=t.gDD(u)
 t.h(t,"success")}z.appendChild(u)}}if(x)document.querySelector("body").className="failed"
 else document.querySelector("body").className=""
-J.ZP(document.querySelector("#wrapper"),z)},"+renderCategories:1:0":1,es:function(a){var z,y,x,w
+J.ZP(document.querySelector("#wrapper"),z)},"+renderCategories:1:0":1,es:function(a){var z,y,x,w,v
 z=document.createElement("div",null)
+z.className="buildJob"
 switch(a.gzZ()){case C.R3:y=J.pP(z)
 y.h(y,"building")
 break
 case C.Yi:y=J.pP(z)
-y.h(y,"failed")
+y.h(y,"failedJob")
 break
-default:}x=document.createElement("span",null)
-y=J.pP(x)
+default:}x=document.createElement("div",null)
+x.className="jobDetails"
+w=document.createElement("span",null)
+y=J.pP(w)
 y.h(y,"large")
-x.textContent=J.WB(a.kL()," ")
-z.appendChild(x)
-w=document.createElement("div",null)
-w.className="btn-group"
-w.appendChild(N.tC(J.AG(a.ghu().gWf()),"glyphicon-list","btn-primary"))
-w.appendChild(N.tC(J.WB(a.gxL()," min(s)"),"glyphicon-time","btn-primary"))
+w.textContent=J.WB(a.kL()," ")
+v=document.createElement("div",null)
+v.className="btn-group"
+v.id="buildJobDetails"
+v.appendChild(N.tC(J.AG(a.ghu().gWf()),"glyphicon-list","btn-primary"))
+v.appendChild(N.tC(J.WB(a.gxL()," min(s)"),"glyphicon-time","btn-primary"))
 y=a.ghu().gzz()
-if(y!=null&&!J.xC(y,""))w.appendChild(N.tC(a.ghu().gzz(),"glyphicon-random","btn-primary"))
-if(J.xC(a.gzZ(),C.Yi))w.appendChild(N.tC(J.WB(J.AG(a.ghu().gyL().gL1())," mins"),"glyphicon-exclamation-sign","btn-danger"))
-z.appendChild(w)
+if(y!=null&&!J.xC(y,""))v.appendChild(N.tC(a.ghu().gzz(),"glyphicon-random","btn-primary"))
+if(J.xC(a.gzZ(),C.Yi))v.appendChild(N.tC(J.WB(J.AG(a.ghu().gyL().gL1())," mins"),"glyphicon-exclamation-sign","btn-danger"))
+x.appendChild(w)
+x.appendChild(v)
+z.appendChild(x)
 z.appendChild(N.px(J.zg(a),a.goY(),a.gzZ()))
 return z},"+BuildJobDetails:1:0":1,px:function(a,b,c){var z,y,x,w,v
 z=J.NQ(J.p0(J.FW(a.gAO(),b.gAO()),100))

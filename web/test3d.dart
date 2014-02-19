@@ -129,23 +129,28 @@ void renderCategories(Map<String,List<Job>> categories) {
 
 DivElement BuildJobDetails(Job job) {
   var buildJob = new DivElement();
+  buildJob.className = "buildJob";
+    
   switch(job.Colour) {
     case JobStatus.BUILDING:
       buildJob.classes.add("building");
       break;
     case JobStatus.FAILED:
-      buildJob.classes.add("failed");
+      buildJob.classes.add("failedJob");
       break;
   }
   
+  var jobDetails = new DivElement();
+  jobDetails.className = "jobDetails";
+  
   var jobInfo = new SpanElement();
   jobInfo.classes.add("large");
-  
   jobInfo.text = job.subname() + " ";
-  buildJob.append(jobInfo);  
+    
   var buildJobDetails = new DivElement();
   buildJobDetails.className = "btn-group";
-    
+  buildJobDetails.id = "buildJobDetails";
+  
   var buildJobBranch = CreateButton(job.lastBuild.number.toString(), "glyphicon-list", "btn-primary");
   buildJobDetails.append(buildJobBranch);
   
@@ -162,7 +167,9 @@ DivElement BuildJobDetails(Job job) {
     buildJobDetails.append(sinceTime);
   }
   
-  buildJob.append(buildJobDetails);
+  jobDetails.append(jobInfo);
+  jobDetails.append(buildJobDetails);
+  buildJob.append(jobDetails);
   
   var progressBar = CreateProgress(job.duration, job.estimatedDuration, job.Colour);
   buildJob.append(progressBar);
@@ -176,6 +183,7 @@ DivElement CreateProgress(Duration currentValue, Duration maxValue, JobStatus jo
   var progressDiv = new DivElement();
   progressDiv.classes.add("progress");
   progressDiv.classes.add("progress-striped");
+ 
 
   if (jobStatus == JobStatus.BUILDING) { progressDiv.classes.add("active"); }
   
