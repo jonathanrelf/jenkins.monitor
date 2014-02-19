@@ -19,13 +19,10 @@ body {
 color: white;
 }
 
-.failedJob {
+.failedJob{
     
-    text-shadow:
-    -2px -2px 0 #000,
-    2px -2px 0 #000,
-    -2px 2px 0 #000,
-    2px 2px 0 #000; 
+    /*)text-shadow:    -2px -2px 0 #000,    2px -2px 0 #000,    -2px 2px 0 #000,    2px 2px 0 #000;*/ 
+   
 }
 
 .progress {
@@ -35,16 +32,28 @@ color: white;
 }
 
 .jobDetails {
- position:absolute; 
+ position: relative; 
 }
 
 #buildJobDetails {
-  margin-top: -40px;
+  
+  top: 10px;
+  position: absolute;
+  right: 10px;
 }
-.large {
+
+#buildJobBranchHeading {
+  
+}
+
+.jobInfo {
+  position: absolute;
   font-size:70px;
   font-weight: bold;
   padding-left: 10px;
+  -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+   -webkit-text-stroke-width: 2px;
+   -webkit-text-stroke-color: black;
 }
 
 .category {

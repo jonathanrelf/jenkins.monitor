@@ -16,7 +16,7 @@ const ms = const Duration (milliseconds: 1);
 void main() {
   renderJobDetails();
   //var computers = new Computers();
-  var timer = startTimeout();
+  //var timer = startTimeout();
 }
 
 void renderJobDetails() {
@@ -144,30 +144,39 @@ DivElement BuildJobDetails(Job job) {
   jobDetails.className = "jobDetails";
   
   var jobInfo = new SpanElement();
-  jobInfo.classes.add("large");
+  jobInfo.classes.add("jobInfo");
   jobInfo.text = job.subname() + " ";
     
   var buildJobDetails = new DivElement();
   buildJobDetails.className = "btn-group";
   buildJobDetails.id = "buildJobDetails";
   
-  var buildJobBranch = CreateButton(job.lastBuild.number.toString(), "glyphicon-list", "btn-primary");
-  buildJobDetails.append(buildJobBranch);
+  var buildJobNumber = CreateButton(job.lastBuild.number.toString(), "glyphicon-list", "btn-primary");
+  buildJobDetails.append(buildJobNumber);
   
   var durationTime = CreateButton(job.timePeriod + " min(s)", "glyphicon-time", "btn-primary");
   buildJobDetails.append(durationTime);
-  
-  if (job.lastBuild.branchName != null && job.lastBuild.branchName != "") {
-    var buildJobBranchName = CreateButton(job.lastBuild.branchName, "glyphicon-random", "btn-primary");
-    buildJobDetails.append(buildJobBranchName);
-  }
   
   if(job.Colour == JobStatus.FAILED){
     var sinceTime = CreateButton(job.lastBuild.timeSince.inMinutes.toString() + " mins", "glyphicon-exclamation-sign", "btn-danger");
     buildJobDetails.append(sinceTime);
   }
   
+  
+  
+//  if (job.lastBuild.branchName != null && job.lastBuild.branchName != "") {
+//    var buildJobBranchHeading = new HeadingElement.h2();
+//    buildJobBranchHeading.id = "buildJobBranchHeading";
+//    
+//    var buildJobBranchName = new SpanElement();
+//    buildJobBranchName.text = job.lastBuild.branchName;
+//    buildJobBranchName.className = "label label-default";
+//    buildJobBranchHeading.append(buildJobBranchName);
+//    jobInfo.append(buildJobBranchHeading);
+//  }
+  
   jobDetails.append(jobInfo);
+  
   jobDetails.append(buildJobDetails);
   buildJob.append(jobDetails);
   
