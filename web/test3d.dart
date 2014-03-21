@@ -17,6 +17,7 @@ void main() {
   renderJobDetails();
   //var computers = new Computers();
   var timer = startTimeout();
+
 }
 
 void renderJobDetails() {
@@ -28,9 +29,29 @@ void onDataLoaded(HttpRequest req) {
   Teams teamsData = new Teams(req.responseText);
   Jobs jobsData = new Jobs(req.responseText);
   
+  var teams = teamNames();
+  
   categoriesMap = new Map<String, List<Job>>();
   jobsData.jobsList.forEach(categorise);
-  renderCategories(categoriesMap);
+  renderCategories(categoriesMap, teams);
+  
+}
+
+List<String> teamNames() {
+  var map = {};
+  List<String> teams;
+  String querystring = window.location.search.replaceFirst("?", "");
+  for (String param in querystring.split("&")) {
+    List<String> keyValue = param.split("=");
+    if (keyValue.length == 1) {
+      map[keyValue[0]] == "";
+    }
+    else if (keyValue.length == 2) {
+      map[keyValue[0]] = Uri.decodeQueryComponent(keyValue[1]);
+      teams = Uri.decodeQueryComponent(keyValue[1]).split(",");
+    }
+  }
+  return teams;
 }
 
 void categorise(Job job) {
@@ -45,7 +66,7 @@ void categorise(Job job) {
   }
 }
 
-void renderCategories(Map<String,List<Job>> categories) {
+void renderCategories(Map<String,List<Job>> categories, List<String> teams) {
   var failedJobs = 0;
   var buildingJobs = 0;
   bool failed = false;
@@ -56,6 +77,12 @@ void renderCategories(Map<String,List<Job>> categories) {
   wrapperDiv.className = "row";
   
   for(var categoryKey in categories.keys) {
+    if (teams != null && teams.length > 0) {
+      if (!teams.contains(categoryKey)) {
+        continue;
+      }
+    }
+    
     buildingJobs = 0;
     failedJobs = 0;
     

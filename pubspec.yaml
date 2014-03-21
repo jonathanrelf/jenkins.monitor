@@ -5,4 +5,5 @@ dependencies:
   json: any
   json_object: any
   unittest: any
+  uri: any
   vector_math: any

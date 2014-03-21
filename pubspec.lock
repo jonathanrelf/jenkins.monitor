@@ -17,6 +17,10 @@ packages:
     description: path
     source: hosted
     version: "1.0.0"
+  quiver:
+    description: quiver
+    source: hosted
+    version: "0.18.0"
   stack_trace:
     description: stack_trace
     source: hosted
@@ -25,6 +29,14 @@ packages:
     description: unittest
     source: hosted
     version: "0.10.0"
+  uri:
+    description: uri
+    source: hosted
+    version: "0.9.0"
+  utf:
+    description: utf
+    source: hosted
+    version: "0.9.0"
   vector_math:
     description: vector_math
     source: hosted
