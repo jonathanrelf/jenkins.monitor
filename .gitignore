@@ -1,2 +1,3 @@
 web/packages
 packages
+!build/web/packages
